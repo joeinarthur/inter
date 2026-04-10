@@ -71,6 +71,7 @@ import com.internshipuncle.domain.model.ResumeRoastResult
 import com.internshipuncle.domain.model.ResumeRoastSummary
 import com.internshipuncle.domain.model.ResumeSummary
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -191,7 +192,7 @@ class ResumeUploadViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val resumeRepository: ResumeRepository,
     private val jobsRepository: JobsRepository,
-    @androidx.annotation.ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
     private val targetJobId: String? = savedStateHandle["targetJobId"]
     private val operationState = MutableStateFlow(ResumeUploadUiState())
@@ -659,6 +660,7 @@ fun ResumeRoastScreen(
         primaryActionLabel = if (uiState.isRoasting) "Roasting..." else "Roast resume",
         secondaryActionLabel = null,
         onPrimaryAction = viewModel::roast,
+        onSecondaryAction = null,
         loading = uiState.isLoading || uiState.isRoasting,
         message = uiState.errorMessage ?: uiState.infoMessage
     ) {
@@ -676,17 +678,18 @@ fun ResumeRoastScreen(
             onModeSelected = viewModel::setMode
         )
 
-        if (uiState.roastSummary != null && uiState.roastDetail == null) {
+        val roastSummary = uiState.roastSummary
+        if (roastSummary != null && uiState.roastDetail == null) {
             ScoreOverviewCard(
                 title = "Latest stored roast",
                 result = ResumeRoastDetail(
                     resumeId = resume?.id ?: "",
                     targetJobId = uiState.targetJob?.id,
-                    overallScore = uiState.roastSummary.overallScore ?: 0,
-                    atsScore = uiState.roastSummary.atsScore ?: 0,
-                    relevanceScore = uiState.roastSummary.relevanceScore ?: 0,
-                    clarityScore = uiState.roastSummary.clarityScore ?: 0,
-                    formattingScore = uiState.roastSummary.formattingScore ?: 0,
+                    overallScore = roastSummary.overallScore ?: 0,
+                    atsScore = roastSummary.atsScore ?: 0,
+                    relevanceScore = roastSummary.relevanceScore ?: 0,
+                    clarityScore = roastSummary.clarityScore ?: 0,
+                    formattingScore = roastSummary.formattingScore ?: 0,
                     roastResult = ResumeRoastResult()
                 )
             )
@@ -1241,7 +1244,7 @@ private fun EditorSectionCard(
     title: String,
     description: String,
     onAdd: () -> Unit,
-    content: @Composable Column.() -> Unit
+    content: @Composable () -> Unit
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),

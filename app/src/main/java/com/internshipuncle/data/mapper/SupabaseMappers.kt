@@ -13,6 +13,7 @@ import com.internshipuncle.data.dto.ProfileDto
 import com.internshipuncle.data.dto.ProfileUpsertDto
 import com.internshipuncle.data.dto.ResumeDto
 import com.internshipuncle.data.dto.ResumeRoastDto
+import com.internshipuncle.data.dto.RoastResumeResponseDto
 import com.internshipuncle.domain.model.InterviewSessionSummary
 import com.internshipuncle.domain.model.JobAnalysis
 import com.internshipuncle.domain.model.JobCard
@@ -31,6 +32,7 @@ import com.internshipuncle.domain.model.ResumeRoastResult
 import com.internshipuncle.domain.model.ResumeRoastSummary
 import com.internshipuncle.domain.model.ResumeSummary
 import com.internshipuncle.domain.model.UserProfile
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonElement
@@ -142,6 +144,19 @@ fun ResumeRoastDto.toDetailModel(): ResumeRoastDetail {
     )
 }
 
+fun RoastResumeResponseDto.toDetailModel(): ResumeRoastDetail {
+    return ResumeRoastDetail(
+        resumeId = resumeId,
+        targetJobId = targetJobId,
+        overallScore = overallScore,
+        atsScore = atsScore,
+        relevanceScore = relevanceScore,
+        clarityScore = clarityScore,
+        formattingScore = formattingScore,
+        roastResult = roastResult.toResumeRoastResult()
+    )
+}
+
 fun GeneratedResumeDto.toDomainModel(): GeneratedResumeDocument {
     return GeneratedResumeDocument(
         generatedResumeId = id,
@@ -162,7 +177,7 @@ fun GeneratedResumeDto.toSummaryModel(): GeneratedResumeSummary {
     )
 }
 
-private fun GeneratedResumeJsonDto.toResumeBuilderInput(): ResumeBuilderInput {
+fun GeneratedResumeJsonDto.toDomainModel(): ResumeBuilderInput {
     return ResumeBuilderInput(
         basics = basics.toDomainModel(),
         education = education.map(GeneratedResumeEducationDto::toDomainModel),
@@ -171,6 +186,17 @@ private fun GeneratedResumeJsonDto.toResumeBuilderInput(): ResumeBuilderInput {
         experience = experience.map(GeneratedResumeExperienceDto::toDomainModel),
         achievements = achievements.map(String::trim).filter(String::isNotBlank)
     )
+}
+
+private fun JsonElement?.toResumeBuilderInput(): ResumeBuilderInput {
+    val dto = runCatching {
+        this?.let {
+            Json { ignoreUnknownKeys = true }
+                .decodeFromJsonElement(GeneratedResumeJsonDto.serializer(), it)
+        }
+    }.getOrNull() ?: return ResumeBuilderInput()
+
+    return dto.toDomainModel()
 }
 
 private fun GeneratedResumeBasicsDto.toDomainModel(): ResumeBasics {

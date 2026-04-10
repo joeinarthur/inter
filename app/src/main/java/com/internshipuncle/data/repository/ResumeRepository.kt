@@ -17,6 +17,7 @@ import com.internshipuncle.data.dto.ResumeRoastDto
 import com.internshipuncle.data.dto.RoastResumeRequestDto
 import com.internshipuncle.data.dto.RoastResumeResponseDto
 import com.internshipuncle.data.mapper.toDomainModel
+import com.internshipuncle.data.mapper.toDetailModel
 import com.internshipuncle.data.mapper.toSummaryModel
 import com.internshipuncle.data.remote.SupabaseBuckets
 import com.internshipuncle.data.remote.SupabaseFunctions
@@ -31,6 +32,7 @@ import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.storage.Storage
+import io.ktor.client.call.body
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
@@ -42,6 +44,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
+import kotlin.time.Duration.Companion.days
 
 interface ResumeRepository {
     fun resumes(): Flow<List<ResumeSummary>>
@@ -145,7 +148,7 @@ class SupabaseResumeRepository @Inject constructor(
                 }
 
             val signedUrl = storage.from(SupabaseBuckets.RESUME_UPLOADS)
-                .createSignedUrl(storagePath, 60 * 60 * 24 * 7)
+                .createSignedUrl(storagePath, 7.days)
 
             postgrest.from(SupabaseTables.RESUMES).upsert(
                 ResumeCreateDto(
@@ -257,7 +260,7 @@ class SupabaseResumeRepository @Inject constructor(
             ).body<RoastResumeResponseDto>()
 
             refreshSignal.update { it + 1 }
-            QueryResult.Success(response.toDomainModel())
+            QueryResult.Success(response.toDetailModel())
         } catch (error: Exception) {
             if (error.isMissingResumeBackend()) {
                 QueryResult.BackendNotReady
