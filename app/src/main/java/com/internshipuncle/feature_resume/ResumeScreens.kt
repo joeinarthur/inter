@@ -1271,6 +1271,7 @@ private fun GeneratedResumePreview(
     generated: GeneratedResumeDocument,
     pdfUrl: String?
 ) {
+    val context = LocalContext.current
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
@@ -1282,7 +1283,14 @@ private fun GeneratedResumePreview(
             Text("Generated resume", style = MaterialTheme.typography.titleLarge)
             Text("Template: ${generated.templateName}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (pdfUrl != null) {
-                Text("PDF ready: $pdfUrl", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                Text(
+                    "PDF exported and ready to open.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                OutlinedButton(onClick = { openExternalUrl(context, pdfUrl) }) {
+                    Text("Open PDF")
+                }
             }
             ResumePreviewSection("Basics", listOfNotNull(
                 generated.resumeJson.basics.name.takeIf(String::isNotBlank),
@@ -1314,6 +1322,13 @@ private fun GeneratedResumePreview(
                 }
             )
         }
+    }
+}
+
+private fun openExternalUrl(context: Context, url: String) {
+    runCatching {
+        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+        context.startActivity(intent)
     }
 }
 

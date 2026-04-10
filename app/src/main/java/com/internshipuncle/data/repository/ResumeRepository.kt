@@ -44,6 +44,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.SerializationException
 import kotlin.time.Duration.Companion.days
 
 interface ResumeRepository {
@@ -92,7 +93,8 @@ class SupabaseResumeRepository @Inject constructor(
     private val auth: Auth,
     private val postgrest: Postgrest,
     private val storage: Storage,
-    private val functions: Functions
+    private val functions: Functions,
+    private val dashboardRefreshBus: DashboardRefreshBus
 ) : ResumeRepository {
     private val refreshSignal = MutableStateFlow(0)
 
@@ -180,10 +182,16 @@ class SupabaseResumeRepository @Inject constructor(
             )
 
             refreshSignal.update { it + 1 }
+            dashboardRefreshBus.refresh()
             QueryResult.Success(summary)
         } catch (error: Exception) {
             if (error.isMissingResumeBackend()) {
                 QueryResult.BackendNotReady
+            } else if (error is SerializationException) {
+                QueryResult.Failure(
+                    message = "The resume backend returned an unexpected response.",
+                    cause = error
+                )
             } else {
                 QueryResult.Failure(
                     message = error.message ?: "Unable to upload and parse the resume.",
@@ -216,10 +224,17 @@ class SupabaseResumeRepository @Inject constructor(
                     append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 }
             ).body<ParseResumeResponseDto>()
+            refreshSignal.update { it + 1 }
+            dashboardRefreshBus.refresh()
             RepositoryStatus.Success
         } catch (error: Exception) {
             if (error.isMissingResumeBackend()) {
                 RepositoryStatus.BackendNotReady
+            } else if (error is SerializationException) {
+                RepositoryStatus.Failure(
+                    message = "The resume backend returned an unexpected response.",
+                    cause = error
+                )
             } else {
                 RepositoryStatus.Failure(
                     message = error.message ?: "Unable to request resume parsing.",
@@ -260,10 +275,16 @@ class SupabaseResumeRepository @Inject constructor(
             ).body<RoastResumeResponseDto>()
 
             refreshSignal.update { it + 1 }
+            dashboardRefreshBus.refresh()
             QueryResult.Success(response.toDetailModel())
         } catch (error: Exception) {
             if (error.isMissingResumeBackend()) {
                 QueryResult.BackendNotReady
+            } else if (error is SerializationException) {
+                QueryResult.Failure(
+                    message = "The resume backend returned an unexpected response.",
+                    cause = error
+                )
             } else {
                 QueryResult.Failure(
                     message = error.message ?: "Unable to roast the resume.",
@@ -316,6 +337,7 @@ class SupabaseResumeRepository @Inject constructor(
             ).body<GenerateResumeResponseDto>()
 
             refreshSignal.update { it + 1 }
+            dashboardRefreshBus.refresh()
             QueryResult.Success(
                 GeneratedResumeDocument(
                     generatedResumeId = response.generatedResumeId,
@@ -329,6 +351,11 @@ class SupabaseResumeRepository @Inject constructor(
         } catch (error: Exception) {
             if (error.isMissingResumeBackend()) {
                 QueryResult.BackendNotReady
+            } else if (error is SerializationException) {
+                QueryResult.Failure(
+                    message = "The resume backend returned an unexpected response.",
+                    cause = error
+                )
             } else {
                 QueryResult.Failure(
                     message = error.message ?: "Unable to generate the resume.",
@@ -361,10 +388,16 @@ class SupabaseResumeRepository @Inject constructor(
             ).body<ExportResumePdfResponseDto>()
 
             refreshSignal.update { it + 1 }
+            dashboardRefreshBus.refresh()
             QueryResult.Success(response.pdfUrl)
         } catch (error: Exception) {
             if (error.isMissingResumeBackend()) {
                 QueryResult.BackendNotReady
+            } else if (error is SerializationException) {
+                QueryResult.Failure(
+                    message = "The resume backend returned an unexpected response.",
+                    cause = error
+                )
             } else {
                 QueryResult.Failure(
                     message = error.message ?: "Unable to export the resume PDF.",

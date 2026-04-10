@@ -403,3 +403,111 @@ data class MockSessionDto(
     @SerialName("updated_at")
     val updatedAt: String? = null
 )
+
+@Serializable
+data class MockQuestionDto(
+    @SerialName("id")
+    val id: String,
+    @SerialName("session_id")
+    val sessionId: String,
+    @SerialName("question")
+    val question: String,
+    @SerialName("category")
+    val category: String? = null,
+    @SerialName("sequence_no")
+    val sequenceNo: Int,
+    @SerialName("expected_points")
+    val expectedPoints: List<String> = emptyList(),
+    @SerialName("created_at")
+    val createdAt: String? = null
+)
+
+@Serializable
+data class MockAnswerDto(
+    @SerialName("id")
+    val id: String,
+    @SerialName("question_id")
+    val questionId: String,
+    @SerialName("answer_text")
+    val answerText: String? = null,
+    @SerialName("feedback")
+    val feedback: JsonElement? = null,
+    @SerialName("score")
+    val score: Int? = null,
+    @SerialName("improved_answer")
+    val improvedAnswer: String? = null,
+    @SerialName("created_at")
+    val createdAt: String? = null
+)
+
+@Serializable
+data class GenerateMockSessionRequestDto(
+    @SerialName("target_job_id")
+    val targetJobId: String? = null,
+    @SerialName("role_name")
+    val roleName: String,
+    @SerialName("difficulty")
+    val difficulty: String,
+    @SerialName("mode")
+    val mode: String,
+    @SerialName("include_resume")
+    val includeResume: Boolean = true
+)
+
+@Serializable
+data class GenerateMockSessionQuestionDto(
+    @SerialName("question_id")
+    val questionId: String,
+    @SerialName("question")
+    val question: String,
+    @SerialName("category")
+    val category: String? = null,
+    @SerialName("sequence_no")
+    val sequenceNo: Int,
+    @SerialName("expected_points")
+    val expectedPoints: List<String> = emptyList()
+)
+
+@Serializable
+data class GenerateMockSessionResponseDto(
+    @SerialName("session_id")
+    val sessionId: String,
+    @SerialName("questions")
+    val questions: List<GenerateMockSessionQuestionDto> = emptyList()
+)
+
+@Serializable
+data class EvaluateAnswerRequestDto(
+    @SerialName("session_id")
+    val sessionId: String,
+    @SerialName("question_id")
+    val questionId: String,
+    @SerialName("answer_text")
+    val answerText: String
+)
+
+@Serializable
+data class EvaluateAnswerFeedbackDto(
+    @SerialName("strengths")
+    val strengths: List<String> = emptyList(),
+    @SerialName("weaknesses")
+    val weaknesses: List<String> = emptyList(),
+    @SerialName("missing_points")
+    val missingPoints: List<String> = emptyList(),
+    @SerialName("follow_up")
+    val followUp: String? = null,
+    @SerialName("improved_answer")
+    val improvedAnswer: String? = null
+)
+
+@Serializable
+data class EvaluateAnswerResponseDto(
+    @SerialName("question_id")
+    val questionId: String,
+    @SerialName("score")
+    val score: Int,
+    @SerialName("feedback")
+    val feedback: EvaluateAnswerFeedbackDto = EvaluateAnswerFeedbackDto(),
+    @SerialName("improved_answer")
+    val improvedAnswer: String? = null
+)

@@ -43,7 +43,8 @@ interface AuthRepository {
 class SupabaseAuthRepository @Inject constructor(
     private val appConfig: AppConfig,
     private val auth: Auth,
-    private val postgrest: Postgrest
+    private val postgrest: Postgrest,
+    private val dashboardRefreshBus: DashboardRefreshBus
 ) : AuthRepository {
     private val profileRefreshSignal = MutableStateFlow(0)
 
@@ -171,6 +172,7 @@ class SupabaseAuthRepository @Inject constructor(
                 onConflict = "id"
             }
             profileRefreshSignal.update { it + 1 }
+            dashboardRefreshBus.refresh()
             RepositoryStatus.Success
         } catch (error: Exception) {
             when {

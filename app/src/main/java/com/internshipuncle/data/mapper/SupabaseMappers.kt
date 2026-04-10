@@ -11,10 +11,20 @@ import com.internshipuncle.data.dto.GeneratedResumeEducationDto
 import com.internshipuncle.data.dto.GeneratedResumeBasicsDto
 import com.internshipuncle.data.dto.ProfileDto
 import com.internshipuncle.data.dto.ProfileUpsertDto
+import com.internshipuncle.data.dto.EvaluateAnswerFeedbackDto
+import com.internshipuncle.data.dto.EvaluateAnswerResponseDto
+import com.internshipuncle.data.dto.GenerateMockSessionQuestionDto
+import com.internshipuncle.data.dto.GenerateMockSessionResponseDto
+import com.internshipuncle.data.dto.MockAnswerDto
+import com.internshipuncle.data.dto.MockQuestionDto
 import com.internshipuncle.data.dto.ResumeDto
 import com.internshipuncle.data.dto.ResumeRoastDto
 import com.internshipuncle.data.dto.RoastResumeResponseDto
 import com.internshipuncle.domain.model.InterviewSessionSummary
+import com.internshipuncle.domain.model.MockInterviewAnswerEvaluation
+import com.internshipuncle.domain.model.MockInterviewAnswerFeedback
+import com.internshipuncle.domain.model.MockInterviewQuestionProgress
+import com.internshipuncle.domain.model.MockInterviewSessionDetail
 import com.internshipuncle.domain.model.JobAnalysis
 import com.internshipuncle.domain.model.JobCard
 import com.internshipuncle.domain.model.JobDetail
@@ -280,5 +290,78 @@ fun MockSessionDto.toDomainModel(): InterviewSessionSummary {
         mode = mode,
         overallScore = overallScore,
         createdAt = createdAt
+    )
+}
+
+fun MockQuestionDto.toDomainModel(
+    answer: MockInterviewAnswerEvaluation? = null
+): MockInterviewQuestionProgress {
+    return MockInterviewQuestionProgress(
+        id = id,
+        question = question,
+        category = category?.takeIf(String::isNotBlank),
+        sequenceNo = sequenceNo,
+        expectedPoints = expectedPoints.map(String::trim).filter(String::isNotBlank),
+        answer = answer
+    )
+}
+
+fun MockAnswerDto.toDomainModel(): MockInterviewAnswerEvaluation {
+    return MockInterviewAnswerEvaluation(
+        questionId = questionId,
+        answerText = answerText.orEmpty(),
+        score = score ?: 0,
+        feedback = feedback.toMockInterviewAnswerFeedback(),
+        improvedAnswer = improvedAnswer?.takeIf(String::isNotBlank)
+            ?: feedback.toMockInterviewAnswerFeedback().improvedAnswer
+    )
+}
+
+fun EvaluateAnswerResponseDto.toDomainModel(answerText: String): MockInterviewAnswerEvaluation {
+    return MockInterviewAnswerEvaluation(
+        questionId = questionId,
+        answerText = answerText,
+        score = score,
+        feedback = feedback.toMockInterviewAnswerFeedback(),
+        improvedAnswer = improvedAnswer?.takeIf(String::isNotBlank)
+            ?: feedback.improvedAnswer?.takeIf(String::isNotBlank)
+    )
+}
+
+fun GenerateMockSessionQuestionDto.toDomainModel(): MockInterviewQuestionProgress {
+    return MockInterviewQuestionProgress(
+        id = questionId,
+        question = question,
+        category = category?.takeIf(String::isNotBlank),
+        sequenceNo = sequenceNo,
+        expectedPoints = expectedPoints.map(String::trim).filter(String::isNotBlank)
+    )
+}
+
+fun GenerateMockSessionResponseDto.toDomainModel(): MockInterviewSessionDetail {
+    return MockInterviewSessionDetail(
+        id = sessionId,
+        questions = questions.map(GenerateMockSessionQuestionDto::toDomainModel)
+    )
+}
+
+private fun EvaluateAnswerFeedbackDto.toMockInterviewAnswerFeedback(): MockInterviewAnswerFeedback {
+    return MockInterviewAnswerFeedback(
+        strengths = strengths.map(String::trim).filter(String::isNotBlank),
+        weaknesses = weaknesses.map(String::trim).filter(String::isNotBlank),
+        missingPoints = missingPoints.map(String::trim).filter(String::isNotBlank),
+        followUp = followUp?.takeIf(String::isNotBlank),
+        improvedAnswer = improvedAnswer?.takeIf(String::isNotBlank)
+    )
+}
+
+private fun JsonElement?.toMockInterviewAnswerFeedback(): MockInterviewAnswerFeedback {
+    val objectValue = this as? JsonObject ?: return MockInterviewAnswerFeedback()
+    return MockInterviewAnswerFeedback(
+        strengths = objectValue["strengths"].toStringList(),
+        weaknesses = objectValue["weaknesses"].toStringList(),
+        missingPoints = objectValue["missing_points"].toStringList(),
+        followUp = objectValue["follow_up"].jsonPrimitiveOrNull(),
+        improvedAnswer = objectValue["improved_answer"].jsonPrimitiveOrNull()
     )
 }

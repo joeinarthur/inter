@@ -6,6 +6,7 @@ sealed class AppDestination(val route: String) {
     data object Signup : AppDestination("signup")
     data object Onboarding : AppDestination("onboarding")
     data object Jobs : AppDestination("jobs")
+    data object Analyze : AppDestination("analyze")
     data object SavedJobs : AppDestination("jobs/saved")
     data object JobDetail : AppDestination("job/{jobId}") {
         fun createRoute(jobId: String) = "job/$jobId"
@@ -33,6 +34,18 @@ sealed class AppDestination(val route: String) {
         }
     }
 
-    data object MockInterview : AppDestination("interview/mock")
+    data object MockInterview : AppDestination("interview/mock?targetJobId={targetJobId}") {
+        fun createRoute(targetJobId: String? = null): String {
+            return targetJobId?.let { "interview/mock?targetJobId=$it" } ?: "interview/mock"
+        }
+    }
+    data object MockInterviewSession : AppDestination("interview/mock/session/{sessionId}") {
+        fun createRoute(sessionId: String): String = "interview/mock/session/$sessionId"
+    }
+    data object MockInterviewSummary : AppDestination("interview/mock/summary/{sessionId}?skippedCount={skippedCount}") {
+        fun createRoute(sessionId: String, skippedCount: Int = 0): String {
+            return "interview/mock/summary/$sessionId?skippedCount=$skippedCount"
+        }
+    }
     data object Dashboard : AppDestination("dashboard")
 }

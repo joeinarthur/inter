@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.SerializationException
 
 interface JobsRepository {
     fun featuredJobs(): Flow<QueryResult<List<JobCard>>>
@@ -30,6 +31,7 @@ interface JobsRepository {
     fun jobDetail(jobId: String): Flow<QueryResult<JobDetail?>>
     fun jobAnalysis(jobId: String): Flow<QueryResult<JobAnalysis?>>
     fun savedJobs(): Flow<QueryResult<List<JobCard>>>
+    fun refresh()
     suspend fun saveJob(jobId: String): RepositoryStatus
     suspend fun unsaveJob(jobId: String): RepositoryStatus
 }
@@ -37,7 +39,8 @@ interface JobsRepository {
 class SupabaseJobsRepository @Inject constructor(
     private val appConfig: AppConfig,
     private val auth: Auth,
-    private val postgrest: Postgrest
+    private val postgrest: Postgrest,
+    private val dashboardRefreshBus: DashboardRefreshBus
 ) : JobsRepository {
     private val refreshSignal = MutableStateFlow(0)
 
@@ -73,6 +76,11 @@ class SupabaseJobsRepository @Inject constructor(
             queryFlow { fetchSavedJobs() }
         }
 
+    override fun refresh() {
+        refreshSignal.update { it + 1 }
+        dashboardRefreshBus.refresh()
+    }
+
     override suspend fun saveJob(
         jobId: String
     ): RepositoryStatus {
@@ -96,7 +104,7 @@ class SupabaseJobsRepository @Inject constructor(
             ) {
                 onConflict = "user_id,job_id"
             }
-            refreshSignal.update { it + 1 }
+            refresh()
             RepositoryStatus.Success
         } catch (error: Exception) {
             when {
@@ -129,9 +137,9 @@ class SupabaseJobsRepository @Inject constructor(
                     filter {
                         eq("job_id", jobId)
                         eq("user_id", user.id)
-                    }
                 }
-            refreshSignal.update { it + 1 }
+                }
+            refresh()
             RepositoryStatus.Success
         } catch (error: Exception) {
             when {
@@ -254,6 +262,10 @@ class SupabaseJobsRepository @Inject constructor(
     private fun Exception.toQueryResult(): QueryResult<Nothing> {
         return when {
             isJobsBackendMissing() -> QueryResult.BackendNotReady
+            this is SerializationException -> QueryResult.Failure(
+                message = "The jobs backend returned an unexpected response.",
+                cause = this
+            )
             else -> QueryResult.Failure(
                 message = message ?: "Unable to load internship data from Supabase.",
                 cause = this

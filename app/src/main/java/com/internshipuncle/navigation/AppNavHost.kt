@@ -5,6 +5,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -16,6 +18,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.internshipuncle.core.ui.AppShell
+import com.internshipuncle.core.ui.PlaceholderScreen
 import com.internshipuncle.core.ui.TopLevelDestination
 import com.internshipuncle.feature_analyze.AnalysisScreen
 import com.internshipuncle.feature_analyze.AnalysisViewModel
@@ -26,8 +29,12 @@ import com.internshipuncle.feature_auth.SignupScreen
 import com.internshipuncle.feature_auth.SplashScreen
 import com.internshipuncle.feature_dashboard.DashboardScreen
 import com.internshipuncle.feature_dashboard.DashboardViewModel
-import com.internshipuncle.feature_interview.MockInterviewScreen
-import com.internshipuncle.feature_interview.MockInterviewViewModel
+import com.internshipuncle.feature_interview.MockInterviewSessionScreen
+import com.internshipuncle.feature_interview.MockInterviewSessionViewModel
+import com.internshipuncle.feature_interview.MockInterviewSetupScreen
+import com.internshipuncle.feature_interview.MockInterviewSetupViewModel
+import com.internshipuncle.feature_interview.MockInterviewSummaryScreen
+import com.internshipuncle.feature_interview.MockInterviewSummaryViewModel
 import com.internshipuncle.feature_jobs.JobDetailScreen
 import com.internshipuncle.feature_jobs.JobDetailViewModel
 import com.internshipuncle.feature_jobs.JobsScreen
@@ -52,9 +59,9 @@ fun InternshipUncleApp() {
 
     val topLevelDestinations = listOf(
         TopLevelDestination("Jobs", AppDestination.Jobs.route),
-        TopLevelDestination("Analyze", AppDestination.Analysis.createRoute("android-intern-1")),
+        TopLevelDestination("Analyze", AppDestination.Analyze.route),
         TopLevelDestination("Resume", AppDestination.ResumeUpload.createRoute()),
-        TopLevelDestination("Interview", AppDestination.MockInterview.route),
+        TopLevelDestination("Interview", AppDestination.MockInterview.createRoute()),
         TopLevelDestination("Dashboard", AppDestination.Dashboard.route)
     )
 
@@ -155,6 +162,30 @@ fun InternshipUncleApp() {
                     onOpenSavedJobs = { navController.navigate(AppDestination.SavedJobs.route) }
                 )
             }
+            composable(AppDestination.Analyze.route) {
+                PlaceholderScreen(
+                    eyebrow = "Analyze",
+                    title = "Pick a role to analyze",
+                    description = "Job analysis is always tied to a target internship. Open the jobs board, choose a role, and jump into the JD reality check from there.",
+                    sections = listOf(
+                        "What you get" to "Plain-English summary, role reality, skill gaps, keywords, and interview topics.",
+                        "Best next move" to "Open a job, then use the analysis CTA from job detail."
+                    ),
+                    actions = {
+                        Button(onClick = {
+                            navController.navigate(AppDestination.Jobs.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }) {
+                            Text("Open jobs")
+                        }
+                    }
+                )
+            }
             composable(AppDestination.SavedJobs.route) {
                 val viewModel: SavedJobsViewModel = hiltViewModel()
                 SavedJobsScreen(
@@ -172,7 +203,7 @@ fun InternshipUncleApp() {
                     viewModel = viewModel,
                     onOpenAnalysis = { jobId -> navController.navigate(AppDestination.Analysis.createRoute(jobId)) },
                     onOpenResume = { jobId -> navController.navigate(AppDestination.ResumeUpload.createRoute(jobId)) },
-                    onOpenInterview = { navController.navigate(AppDestination.MockInterview.route) }
+                    onOpenInterview = { jobId -> navController.navigate(AppDestination.MockInterview.createRoute(jobId)) }
                 )
             }
             composable(
@@ -196,13 +227,112 @@ fun InternshipUncleApp() {
                 val viewModel: ResumeRoastViewModel = hiltViewModel()
                 ResumeRoastScreen(viewModel = viewModel)
             }
-            composable(AppDestination.MockInterview.route) {
-                val viewModel: MockInterviewViewModel = hiltViewModel()
-                MockInterviewScreen(viewModel = viewModel)
+            composable(
+                route = AppDestination.MockInterview.route,
+                arguments = listOf(navArgument("targetJobId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                })
+            ) {
+                val viewModel: MockInterviewSetupViewModel = hiltViewModel()
+                MockInterviewSetupScreen(
+                    viewModel = viewModel,
+                    onOpenSession = { sessionId ->
+                        navController.navigate(AppDestination.MockInterviewSession.createRoute(sessionId))
+                    }
+                )
+            }
+            composable(
+                route = AppDestination.MockInterviewSession.route,
+                arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
+            ) {
+                val viewModel: MockInterviewSessionViewModel = hiltViewModel()
+                MockInterviewSessionScreen(
+                    viewModel = viewModel,
+                    onSessionComplete = { sessionId, skippedCount ->
+                        navController.navigate(AppDestination.MockInterviewSummary.createRoute(sessionId, skippedCount)) {
+                            popUpTo(AppDestination.MockInterviewSession.route) {
+                                inclusive = true
+                            }
+                        }
+                    },
+                    onOpenSetup = {
+                        navController.navigate(AppDestination.MockInterview.createRoute())
+                    }
+                )
+            }
+            composable(
+                route = AppDestination.MockInterviewSummary.route,
+                arguments = listOf(
+                    navArgument("sessionId") { type = NavType.StringType },
+                    navArgument("skippedCount") {
+                        type = NavType.IntType
+                        defaultValue = 0
+                    }
+                )
+            ) {
+                val viewModel: MockInterviewSummaryViewModel = hiltViewModel()
+                MockInterviewSummaryScreen(
+                    viewModel = viewModel,
+                    onPracticeAgain = { _ ->
+                        navController.navigate(AppDestination.MockInterview.createRoute()) {
+                            popUpTo(AppDestination.MockInterview.route) {
+                                inclusive = true
+                            }
+                        }
+                    },
+                    onOpenInterview = {
+                        navController.navigate(AppDestination.MockInterview.createRoute()) {
+                            popUpTo(AppDestination.MockInterview.route) {
+                                inclusive = true
+                            }
+                        }
+                    }
+                )
             }
             composable(AppDestination.Dashboard.route) {
                 val viewModel: DashboardViewModel = hiltViewModel()
-                DashboardScreen(viewModel = viewModel)
+                DashboardScreen(
+                    viewModel = viewModel,
+                    onOpenJobs = {
+                        navController.navigate(AppDestination.Jobs.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onOpenSavedJobs = {
+                        navController.navigate(AppDestination.SavedJobs.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onOpenResumeLab = {
+                        navController.navigate(AppDestination.ResumeUpload.createRoute()) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onOpenInterview = {
+                        navController.navigate(AppDestination.MockInterview.createRoute()) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onOpenJob = { jobId -> navController.navigate(AppDestination.JobDetail.createRoute(jobId)) }
+                )
             }
         }
     }
@@ -243,17 +373,22 @@ private fun String?.toTitle(): String {
         AppDestination.Signup.route -> "Create your account"
         AppDestination.Onboarding.route -> "Pick your target roles"
         AppDestination.Jobs.route -> "Discover curated internships"
+        AppDestination.Analyze.route -> "Analyze a target role"
         AppDestination.SavedJobs.route -> "Saved internships"
         AppDestination.ResumeUpload.route -> "Resume Lab"
         AppDestination.ResumeBuilder.route -> "Resume Builder"
         AppDestination.MockInterview.route -> "Interview Prep"
         AppDestination.Dashboard.route -> "Readiness dashboard"
+        AppDestination.MockInterviewSession.route -> "Mock interview session"
+        AppDestination.MockInterviewSummary.route -> "Interview summary"
         else -> when {
             this?.startsWith("resume/upload") == true -> "Resume Lab"
             this?.startsWith("resume/builder") == true -> "Resume Builder"
             this?.startsWith("resume/roast/") == true -> "Resume roast"
             this?.startsWith("job/") == true -> "Target role overview"
             this?.startsWith("analysis/") == true -> "JD reality check"
+            this?.startsWith("interview/mock/session/") == true -> "Mock interview session"
+            this?.startsWith("interview/mock/summary/") == true -> "Interview summary"
             else -> "Internship prep"
         }
     }

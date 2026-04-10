@@ -9,6 +9,8 @@ object SupabaseTables {
     const val RESUME_ROASTS = "resume_roasts"
     const val GENERATED_RESUMES = "generated_resumes"
     const val MOCK_SESSIONS = "mock_sessions"
+    const val MOCK_QUESTIONS = "mock_questions"
+    const val MOCK_ANSWERS = "mock_answers"
 }
 
 object SupabaseBuckets {

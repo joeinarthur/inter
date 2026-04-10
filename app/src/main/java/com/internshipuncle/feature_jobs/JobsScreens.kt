@@ -381,7 +381,7 @@ fun JobDetailScreen(
     viewModel: JobDetailViewModel = hiltViewModel(),
     onOpenAnalysis: (String) -> Unit,
     onOpenResume: (String) -> Unit,
-    onOpenInterview: () -> Unit
+    onOpenInterview: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -593,7 +593,7 @@ fun JobDetailScreen(
                             }
                             OutlinedButton(
                                 modifier = Modifier.fillMaxWidth(),
-                                onClick = onOpenInterview
+                                onClick = { onOpenInterview(safeJob.id) }
                             ) {
                                 Text("Practice interview")
                             }
