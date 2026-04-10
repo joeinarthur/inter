@@ -15,9 +15,22 @@ sealed class AppDestination(val route: String) {
         fun createRoute(jobId: String) = "analysis/$jobId"
     }
 
-    data object ResumeUpload : AppDestination("resume/upload")
-    data object ResumeRoast : AppDestination("resume/roast/{resumeId}") {
-        fun createRoute(resumeId: String) = "resume/roast/$resumeId"
+    data object ResumeUpload : AppDestination("resume/upload?targetJobId={targetJobId}") {
+        fun createRoute(targetJobId: String? = null): String {
+            return targetJobId?.let { "resume/upload?targetJobId=$it" } ?: "resume/upload"
+        }
+    }
+
+    data object ResumeBuilder : AppDestination("resume/builder?targetJobId={targetJobId}") {
+        fun createRoute(targetJobId: String? = null): String {
+            return targetJobId?.let { "resume/builder?targetJobId=$it" } ?: "resume/builder"
+        }
+    }
+
+    data object ResumeRoast : AppDestination("resume/roast/{resumeId}?targetJobId={targetJobId}") {
+        fun createRoute(resumeId: String, targetJobId: String? = null): String {
+            return targetJobId?.let { "resume/roast/$resumeId?targetJobId=$it" } ?: "resume/roast/$resumeId"
+        }
     }
 
     data object MockInterview : AppDestination("interview/mock")

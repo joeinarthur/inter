@@ -218,6 +218,30 @@ enable_confirmations = false
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
 max_frequency = "1s"
+
+[functions.analyze-job]
+verify_jwt = false
+
+[functions.parse-resume]
+verify_jwt = false
+
+[functions.roast-resume]
+verify_jwt = false
+
+[functions.generate-resume]
+verify_jwt = false
+
+[functions.export-resume-pdf]
+verify_jwt = false
+
+[functions.generate-mock-session]
+verify_jwt = false
+
+[functions.evaluate-answer]
+verify_jwt = false
+
+[functions.personalized-fit-check]
+verify_jwt = false
 # Number of characters used in the email OTP.
 otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).

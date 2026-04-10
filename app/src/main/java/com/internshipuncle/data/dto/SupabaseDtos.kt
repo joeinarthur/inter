@@ -127,6 +127,18 @@ data class ResumeDto(
 )
 
 @Serializable
+data class ResumeCreateDto(
+    @SerialName("id")
+    val id: String,
+    @SerialName("user_id")
+    val userId: String,
+    @SerialName("file_url")
+    val fileUrl: String? = null,
+    @SerialName("file_name")
+    val fileName: String? = null
+)
+
+@Serializable
 data class ResumeRoastDto(
     @SerialName("id")
     val id: String,
@@ -150,6 +162,200 @@ data class ResumeRoastDto(
     val roastResult: JsonElement? = null,
     @SerialName("created_at")
     val createdAt: String? = null
+)
+
+@Serializable
+data class GeneratedResumeDto(
+    @SerialName("id")
+    val id: String,
+    @SerialName("user_id")
+    val userId: String,
+    @SerialName("source_resume_id")
+    val sourceResumeId: String? = null,
+    @SerialName("target_job_id")
+    val targetJobId: String? = null,
+    @SerialName("template_name")
+    val templateName: String? = null,
+    @SerialName("resume_json")
+    val resumeJson: JsonElement? = null,
+    @SerialName("pdf_url")
+    val pdfUrl: String? = null,
+    @SerialName("created_at")
+    val createdAt: String? = null,
+    @SerialName("updated_at")
+    val updatedAt: String? = null
+)
+
+@Serializable
+data class GeneratedResumeUpsertDto(
+    @SerialName("id")
+    val id: String,
+    @SerialName("user_id")
+    val userId: String,
+    @SerialName("source_resume_id")
+    val sourceResumeId: String? = null,
+    @SerialName("target_job_id")
+    val targetJobId: String? = null,
+    @SerialName("template_name")
+    val templateName: String? = null,
+    @SerialName("resume_json")
+    val resumeJson: GeneratedResumeJsonDto,
+    @SerialName("pdf_url")
+    val pdfUrl: String? = null
+)
+
+@Serializable
+data class GeneratedResumeBasicsDto(
+    @SerialName("name")
+    val name: String? = null,
+    @SerialName("email")
+    val email: String? = null,
+    @SerialName("phone")
+    val phone: String? = null,
+    @SerialName("location")
+    val location: String? = null,
+    @SerialName("linkedin")
+    val linkedin: String? = null,
+    @SerialName("github")
+    val github: String? = null,
+    @SerialName("portfolio")
+    val portfolio: String? = null
+)
+
+@Serializable
+data class GeneratedResumeEducationDto(
+    @SerialName("school")
+    val school: String? = null,
+    @SerialName("degree")
+    val degree: String? = null,
+    @SerialName("start")
+    val start: String? = null,
+    @SerialName("end")
+    val end: String? = null,
+    @SerialName("gpa")
+    val gpa: String? = null
+)
+
+@Serializable
+data class GeneratedResumeProjectDto(
+    @SerialName("name")
+    val name: String? = null,
+    @SerialName("description")
+    val description: String? = null,
+    @SerialName("highlights")
+    val highlights: List<String> = emptyList()
+)
+
+@Serializable
+data class GeneratedResumeExperienceDto(
+    @SerialName("company")
+    val company: String? = null,
+    @SerialName("role")
+    val role: String? = null,
+    @SerialName("start")
+    val start: String? = null,
+    @SerialName("end")
+    val end: String? = null,
+    @SerialName("bullets")
+    val bullets: List<String> = emptyList()
+)
+
+@Serializable
+data class GeneratedResumeJsonDto(
+    @SerialName("basics")
+    val basics: GeneratedResumeBasicsDto = GeneratedResumeBasicsDto(),
+    @SerialName("education")
+    val education: List<GeneratedResumeEducationDto> = emptyList(),
+    @SerialName("skills")
+    val skills: List<String> = emptyList(),
+    @SerialName("projects")
+    val projects: List<GeneratedResumeProjectDto> = emptyList(),
+    @SerialName("experience")
+    val experience: List<GeneratedResumeExperienceDto> = emptyList(),
+    @SerialName("achievements")
+    val achievements: List<String> = emptyList()
+)
+
+@Serializable
+data class ParseResumeRequestDto(
+    @SerialName("resume_id")
+    val resumeId: String,
+    @SerialName("file_url")
+    val fileUrl: String
+)
+
+@Serializable
+data class ParseResumeResponseDto(
+    @SerialName("resume_id")
+    val resumeId: String,
+    @SerialName("parsed_text")
+    val parsedText: String,
+    @SerialName("parsed_sections")
+    val parsedSections: JsonElement
+)
+
+@Serializable
+data class RoastResumeRequestDto(
+    @SerialName("resume_id")
+    val resumeId: String,
+    @SerialName("target_job_id")
+    val targetJobId: String? = null,
+    @SerialName("mode")
+    val mode: String
+)
+
+@Serializable
+data class RoastResumeResponseDto(
+    @SerialName("resume_id")
+    val resumeId: String,
+    @SerialName("target_job_id")
+    val targetJobId: String? = null,
+    @SerialName("overall_score")
+    val overallScore: Int,
+    @SerialName("ats_score")
+    val atsScore: Int,
+    @SerialName("relevance_score")
+    val relevanceScore: Int,
+    @SerialName("clarity_score")
+    val clarityScore: Int,
+    @SerialName("formatting_score")
+    val formattingScore: Int,
+    @SerialName("roast_result")
+    val roastResult: JsonElement
+)
+
+@Serializable
+data class GenerateResumeRequestDto(
+    @SerialName("source_resume_id")
+    val sourceResumeId: String? = null,
+    @SerialName("target_job_id")
+    val targetJobId: String? = null,
+    @SerialName("template_name")
+    val templateName: String,
+    @SerialName("input_profile")
+    val inputProfile: GeneratedResumeJsonDto
+)
+
+@Serializable
+data class GenerateResumeResponseDto(
+    @SerialName("generated_resume_id")
+    val generatedResumeId: String,
+    @SerialName("resume_json")
+    val resumeJson: GeneratedResumeJsonDto
+)
+
+@Serializable
+data class ExportResumePdfRequestDto(
+    @SerialName("generated_resume_id")
+    val generatedResumeId: String
+)
+
+@Serializable
+data class ExportResumePdfResponseDto(
+    @SerialName("generated_resume_id")
+    val generatedResumeId: String,
+    @SerialName("pdf_url")
+    val pdfUrl: String
 )
 
 @Serializable

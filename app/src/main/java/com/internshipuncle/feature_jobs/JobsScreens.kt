@@ -380,7 +380,7 @@ fun SavedJobsScreen(
 fun JobDetailScreen(
     viewModel: JobDetailViewModel = hiltViewModel(),
     onOpenAnalysis: (String) -> Unit,
-    onOpenResume: () -> Unit,
+    onOpenResume: (String) -> Unit,
     onOpenInterview: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -587,7 +587,7 @@ fun JobDetailScreen(
                             }
                             OutlinedButton(
                                 modifier = Modifier.fillMaxWidth(),
-                                onClick = onOpenResume
+                                onClick = { onOpenResume(safeJob.id) }
                             ) {
                                 Text("Open Resume Lab")
                             }
