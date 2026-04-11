@@ -1,21 +1,21 @@
 package com.internshipuncle.feature_analyze
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,7 +29,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import com.internshipuncle.core.design.DeepNavy
+import com.internshipuncle.core.design.InternshipUncleTheme
+import com.internshipuncle.core.design.PureWhite
+import com.internshipuncle.core.design.RoyalBlue
+import com.internshipuncle.core.design.SkyBlueMedium
 import com.internshipuncle.core.model.QueryResult
+import com.internshipuncle.core.ui.PlaceholderScreen
 import com.internshipuncle.data.repository.JobsRepository
 import com.internshipuncle.domain.model.JobAnalysis
 import com.internshipuncle.domain.model.JobDetail
@@ -91,6 +97,8 @@ class AnalysisViewModel @Inject constructor(
     }
 }
 
+// ── Screens ─────────────────────────────────────────────────────────
+
 @Composable
 fun AnalysisScreen(
     viewModel: AnalysisViewModel = hiltViewModel()
@@ -100,18 +108,16 @@ fun AnalysisScreen(
 
     when {
         uiState.isLoading -> AnalysisStateScreen(
-            title = "Loading job analysis",
+            title = "Loading intelligence",
             description = "Pulling the role summary, skill gaps, and interview topics from Supabase.",
             showProgress = true
         )
-
         job == null -> AnalysisStateScreen(
             title = "Analysis unavailable",
             description = uiState.errorMessage ?: uiState.backendMessage ?: "This analysis could not be loaded.",
             actionLabel = "Retry",
             onAction = viewModel::refresh
         )
-
         else -> AnalysisContent(
             job = job,
             analysis = uiState.analysis,
@@ -129,33 +135,42 @@ private fun AnalysisContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = InternshipUncleTheme.spacing.medium)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.large)
     ) {
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = job.title,
-            style = MaterialTheme.typography.displayLarge,
-            fontWeight = FontWeight.SemiBold
-        )
-        Text(
-            text = listOfNotNull(
-                job.company,
-                job.location?.takeIf(String::isNotBlank),
-                job.workMode?.takeIf(String::isNotBlank),
-                job.employmentType?.takeIf(String::isNotBlank)
-            ).joinToString(" | "),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        if (job.tags.isNotEmpty()) {
+        Column(
+            modifier = Modifier.padding(top = InternshipUncleTheme.spacing.large),
+            verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.medium)
+        ) {
             Text(
-                text = job.tags.joinToString(" | "),
-                style = MaterialTheme.typography.bodyMedium,
+                text = "ROLE INTELLIGENCE",
+                style = MaterialTheme.typography.labelMedium,
+                color = RoyalBlue,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = job.title,
+                style = MaterialTheme.typography.displayLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = listOfNotNull(
+                    job.company,
+                    job.location?.takeIf(String::isNotBlank),
+                    job.workMode?.takeIf(String::isNotBlank),
+                    job.employmentType?.takeIf(String::isNotBlank)
+                ).joinToString(" | "),
+                style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (job.tags.isNotEmpty()) {
+                Text(
+                    text = job.tags.joinToString(" | "),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
         if (analysis == null) {
@@ -165,32 +180,32 @@ private fun AnalysisContent(
             )
         } else {
             AnalysisSectionCard(title = "Summary", body = analysis.summary)
-            AnalysisSectionCard(title = "Role reality", body = analysis.roleReality)
+            AnalysisSectionCard(title = "Role Reality", body = analysis.roleReality)
 
             if (analysis.requiredSkills.isNotEmpty()) {
                 AnalysisListCard(
-                    title = "Required skills",
+                    title = "Required Skills",
                     values = analysis.requiredSkills
                 )
             }
 
             if (analysis.preferredSkills.isNotEmpty()) {
                 AnalysisListCard(
-                    title = "Preferred skills",
+                    title = "Preferred Skills",
                     values = analysis.preferredSkills
                 )
             }
 
             if (analysis.topKeywords.isNotEmpty()) {
                 AnalysisListCard(
-                    title = "Top keywords",
+                    title = "Top Keywords",
                     values = analysis.topKeywords
                 )
             }
 
             if (analysis.likelyInterviewTopics.isNotEmpty()) {
                 AnalysisListCard(
-                    title = "Likely interview topics",
+                    title = "Likely Interview Topics",
                     values = analysis.likelyInterviewTopics
                 )
             }
@@ -205,29 +220,37 @@ private fun AnalysisContent(
 
         message?.let {
             AnalysisNoticeCard(
-                title = "Backend note",
+                title = "Backend Note",
                 body = it
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(96.dp))
     }
 }
+
+// ── Components ──────────────────────────────────────────────────────
 
 @Composable
 private fun AnalysisSectionCard(
     title: String,
     body: String
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = PureWhite.copy(alpha = 0.85f),
+        shadowElevation = 3.dp
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(text = title, style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
             Text(
                 text = body,
                 style = MaterialTheme.typography.bodyMedium,
@@ -242,23 +265,37 @@ private fun AnalysisListCard(
     title: String,
     values: List<String>
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = PureWhite.copy(alpha = 0.85f),
+        shadowElevation = 3.dp
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text(text = title, style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
             values.forEachIndexed { index, value ->
-                Text(
-                    text = "${index + 1}. $value",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "•",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = RoyalBlue
+                    )
+                    Text(
+                        text = value,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
@@ -270,18 +307,25 @@ private fun AnalysisNoticeCard(
     body: String
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = MaterialTheme.shapes.medium
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = DeepNavy,
+        shadowElevation = 4.dp
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(text = title, style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = PureWhite
+            )
             Text(
                 text = body,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = PureWhite.copy(alpha = 0.8f)
             )
         }
     }
@@ -295,45 +339,29 @@ private fun AnalysisStateScreen(
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center
-    ) {
-        Card(
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                if (showProgress) {
-                    CircularProgressIndicator()
-                }
-                Text(text = title, style = MaterialTheme.typography.titleLarge)
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-                Text(
-                    text = "Analysis is rendered from structured backend data, not generated on-device.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                if (actionLabel != null && onAction != null) {
-                    OutlinedButton(onClick = onAction) {
-                        Text(actionLabel)
-                    }
+    PlaceholderScreen(
+        eyebrow = "Analysis",
+        title = title,
+        description = description,
+        actions = {
+            if (showProgress) {
+                CircularProgressIndicator(color = RoyalBlue)
+            }
+            if (actionLabel != null && onAction != null) {
+                Button(
+                    onClick = onAction,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(26.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = RoyalBlue,
+                        contentColor = PureWhite
+                    )
+                ) {
+                    Text(text = actionLabel, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
-    }
+    )
 }
 
 private fun <T> QueryResult<T>.successData(): T? {

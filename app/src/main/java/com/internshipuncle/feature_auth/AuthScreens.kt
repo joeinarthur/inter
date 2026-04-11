@@ -2,19 +2,21 @@ package com.internshipuncle.feature_auth
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -29,9 +31,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import com.internshipuncle.core.design.Cloud
-import com.internshipuncle.core.design.Graphite
+import com.internshipuncle.core.design.CoolGray
+import com.internshipuncle.core.design.DeepNavy
 import com.internshipuncle.core.design.InternshipUncleTheme
+import com.internshipuncle.core.design.PureWhite
+import com.internshipuncle.core.design.RoyalBlue
 import com.internshipuncle.core.model.RepositoryStatus
 import com.internshipuncle.core.ui.PlaceholderScreen
 import com.internshipuncle.data.repository.AuthRepository
@@ -442,7 +446,7 @@ fun SplashScreen(
 ) {
     PlaceholderScreen(
         eyebrow = "Internship Uncle",
-        title = "Target the role. Fix the gaps. Apply sharper.",
+        title = "Target the role.\nFix the gaps.\nApply sharper.",
         description = "The app restores your Supabase session first, then routes you into login, onboarding, or curated jobs based on real auth and profile state.",
         sections = listOf(
             "Session restore" to when {
@@ -456,7 +460,7 @@ fun SplashScreen(
             "Guardrail" to "AI logic stays server-side. Android handles auth, screen state, and structured data display only."
         ),
         actions = {
-            CircularProgressIndicator()
+            CircularProgressIndicator(color = RoyalBlue)
         }
     )
 }
@@ -503,16 +507,12 @@ fun LoginScreen(
             keyboardType = KeyboardType.Password,
             isPassword = true
         )
-        Button(
+        PillButton(
             onClick = viewModel::signIn,
             enabled = uiState.canSubmit,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            LoadingLabel(
-                isLoading = uiState.isSubmitting,
-                idleText = "Sign in"
-            )
-        }
+            isLoading = uiState.isSubmitting,
+            label = "Sign in"
+        )
     }
 }
 
@@ -558,16 +558,12 @@ fun SignupScreen(
             keyboardType = KeyboardType.Password,
             isPassword = true
         )
-        Button(
+        PillButton(
             onClick = viewModel::signUp,
             enabled = uiState.canSubmit,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            LoadingLabel(
-                isLoading = uiState.isSubmitting,
-                idleText = "Create account"
-            )
-        }
+            isLoading = uiState.isSubmitting,
+            label = "Create account"
+        )
     }
 }
 
@@ -633,16 +629,12 @@ fun OnboardingScreen(
             supportingText = uiState.targetRolesError ?: "Separate multiple roles with commas.",
             singleLine = false
         )
-        Button(
+        PillButton(
             onClick = viewModel::submit,
             enabled = uiState.canSubmit,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            LoadingLabel(
-                isLoading = uiState.isSubmitting,
-                idleText = "Finish onboarding"
-            )
-        }
+            isLoading = uiState.isSubmitting,
+            label = "Finish onboarding"
+        )
         TextButton(
             onClick = viewModel::signOut,
             enabled = !uiState.isSubmitting && !uiState.isSigningOut,
@@ -655,6 +647,8 @@ fun OnboardingScreen(
         }
     }
 }
+
+// ── Redesigned Auth Scaffold ──────────────────────────────────────────
 
 @Composable
 private fun AuthStageScaffold(
@@ -675,42 +669,45 @@ private fun AuthStageScaffold(
             ),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Hero header — deep navy card matching dashboard's readiness hero
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = if (InternshipUncleTheme.isDarkTheme) {
-                MaterialTheme.colorScheme.surface
-            } else {
-                Graphite
-            }
+            color = DeepNavy,
+            shadowElevation = 8.dp
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
+                    .padding(28.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
                     text = eyebrow.uppercase(),
                     style = MaterialTheme.typography.labelMedium,
-                    color = Cloud.copy(alpha = 0.84f)
+                    color = PureWhite.copy(alpha = 0.6f),
+                    fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.displayLarge,
-                    color = Cloud,
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.displayMedium,
+                    color = PureWhite,
+                    fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Cloud.copy(alpha = 0.78f)
+                    color = PureWhite.copy(alpha = 0.78f)
                 )
             }
         }
 
-        Card(
+        // Form card — frosted glass
+        Surface(
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            color = PureWhite.copy(alpha = 0.88f),
+            shadowElevation = 6.dp
         ) {
             Column(
                 modifier = Modifier
@@ -727,11 +724,44 @@ private fun AuthStageScaffold(
                 onClick = onFooterAction,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(footerActionLabel)
+                Text(
+                    text = footerActionLabel,
+                    color = RoyalBlue,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     }
 }
+
+// ── Pill Button (design.md: 980 radius CTA) ──────────────────────────
+
+@Composable
+private fun PillButton(
+    onClick: () -> Unit,
+    enabled: Boolean,
+    isLoading: Boolean,
+    label: String
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp),
+        shape = RoundedCornerShape(26.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = RoyalBlue,
+            contentColor = PureWhite,
+            disabledContainerColor = RoyalBlue.copy(alpha = 0.4f),
+            disabledContentColor = PureWhite.copy(alpha = 0.6f)
+        )
+    ) {
+        LoadingLabel(isLoading = isLoading, idleText = label)
+    }
+}
+
+// ── Styled Text Field ────────────────────────────────────────────────
 
 @Composable
 private fun AppTextField(
@@ -754,12 +784,19 @@ private fun AppTextField(
         singleLine = singleLine,
         minLines = if (singleLine) 1 else 3,
         isError = isError,
+        shape = RoundedCornerShape(14.dp),
         visualTransformation = if (isPassword) {
             PasswordVisualTransformation()
         } else {
             androidx.compose.ui.text.input.VisualTransformation.None
         },
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = RoyalBlue,
+            unfocusedBorderColor = CoolGray.copy(alpha = 0.4f),
+            focusedLabelColor = RoyalBlue,
+            cursorColor = RoyalBlue
+        ),
         supportingText = {
             supportingText?.takeIf(String::isNotBlank)?.let { text ->
                 Text(text)
@@ -767,6 +804,8 @@ private fun AppTextField(
         }
     )
 }
+
+// ── Message Banner ───────────────────────────────────────────────────
 
 @Composable
 private fun AuthMessageBanner(
@@ -780,7 +819,7 @@ private fun AuthMessageBanner(
         } else {
             MaterialTheme.colorScheme.surfaceVariant
         },
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(14.dp)
     ) {
         Text(
             text = safeMessage,
@@ -804,7 +843,7 @@ private fun ReadOnlyProfileRow(
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(14.dp)
     ) {
         Column(
             modifier = Modifier
@@ -815,7 +854,8 @@ private fun ReadOnlyProfileRow(
             Text(
                 text = label.uppercase(),
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = RoyalBlue,
+                fontWeight = FontWeight.SemiBold
             )
             Text(
                 text = value,
@@ -833,10 +873,11 @@ private fun LoadingLabel(
     if (isLoading) {
         CircularProgressIndicator(
             modifier = Modifier.padding(vertical = 2.dp),
-            strokeWidth = 2.dp
+            strokeWidth = 2.dp,
+            color = PureWhite
         )
     } else {
-        Text(idleText)
+        Text(idleText, fontWeight = FontWeight.SemiBold)
     }
 }
 

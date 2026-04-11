@@ -19,19 +19,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,7 +46,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,7 +59,12 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import com.internshipuncle.core.design.CoolGray
+import com.internshipuncle.core.design.DeepNavy
 import com.internshipuncle.core.design.InternshipUncleTheme
+import com.internshipuncle.core.design.PureWhite
+import com.internshipuncle.core.design.RoyalBlue
+import com.internshipuncle.core.design.SkyBlueMedium
 import com.internshipuncle.core.model.QueryResult
 import com.internshipuncle.core.model.RepositoryStatus
 import com.internshipuncle.data.repository.JobsRepository
@@ -70,6 +82,7 @@ import com.internshipuncle.domain.model.ResumeRoastIssue
 import com.internshipuncle.domain.model.ResumeRoastResult
 import com.internshipuncle.domain.model.ResumeRoastSummary
 import com.internshipuncle.domain.model.ResumeSummary
+import com.internshipuncle.core.ui.PlaceholderScreen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
@@ -586,6 +599,78 @@ class ResumeBuilderViewModel @Inject constructor(
     }
 }
 
+// ── Shared Generic Sub-components ──────────────────────────────────
+
+@Composable
+private fun PillButton(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    isLoading: Boolean = false,
+    label: String
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.height(52.dp),
+        shape = RoundedCornerShape(26.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = RoyalBlue,
+            contentColor = PureWhite,
+            disabledContainerColor = RoyalBlue.copy(alpha = 0.4f),
+            disabledContentColor = PureWhite.copy(alpha = 0.6f)
+        )
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(modifier = Modifier.padding(2.dp), strokeWidth = 2.dp, color = PureWhite)
+        } else {
+            Text(label, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
+private fun OutlinedPillButton(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    label: String
+) {
+    OutlinedButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.height(52.dp),
+        shape = RoundedCornerShape(26.dp)
+    ) {
+        Text(label, fontWeight = FontWeight.SemiBold, color = if (enabled) RoyalBlue else CoolGray)
+    }
+}
+
+@Composable
+private fun ResumeNoticeCard(
+    title: String,
+    body: String,
+    accent: Color,
+    isDark: Boolean
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = if (isDark) DeepNavy else PureWhite.copy(alpha = 0.9f),
+        shadowElevation = 2.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(title, style = MaterialTheme.typography.titleMedium, color = if (isDark) PureWhite else accent)
+            Text(body, style = MaterialTheme.typography.bodyMedium, color = if (isDark) PureWhite.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+// ── Screens ────────────────────────────────────────────────────────
+
 @Composable
 fun ResumeUploadScreen(
     viewModel: ResumeUploadViewModel = hiltViewModel(),
@@ -601,46 +686,58 @@ fun ResumeUploadScreen(
         }
     }
 
-    ResumeLabScaffold(
-        eyebrow = "Resume Lab",
-        title = "Upload, parse, roast, and export from one place.",
-        description = "Pick a PDF, let Supabase Storage and Edge Functions do the backend work, then iterate on the structured output.",
-        targetJobLabel = uiState.targetJob?.let { "${it.title} at ${it.company}" },
-        primaryActionLabel = "Pick PDF resume",
-        secondaryActionLabel = "Open builder",
-        onPrimaryAction = { picker.launch(arrayOf("application/pdf")) },
-        onSecondaryAction = { onOpenBuilder(uiState.targetJob?.id) },
-        loading = uiState.isLoading || uiState.uploadPhase == ResumeUploadPhase.Uploading || uiState.uploadPhase == ResumeUploadPhase.Parsing,
-        message = uiState.errorMessage ?: uiState.infoMessage
-    ) {
-        if (uiState.uploadPhase != ResumeUploadPhase.Idle || uiState.selectedFileName != null) {
-            StatusPanel(
-                title = when (uiState.uploadPhase) {
-                    ResumeUploadPhase.Idle -> "Ready to upload"
-                    ResumeUploadPhase.Uploading -> "Uploading to Supabase Storage"
-                    ResumeUploadPhase.Parsing -> "Parsing with Edge Functions"
-                    ResumeUploadPhase.Success -> "Resume parsed and saved"
-                },
-                body = uiState.selectedFileName ?: "No file selected yet.",
-                showProgress = uiState.uploadPhase == ResumeUploadPhase.Uploading || uiState.uploadPhase == ResumeUploadPhase.Parsing
-            )
-        }
+    when {
+        uiState.isLoading -> PlaceholderScreen(
+            eyebrow = "Resume Lab",
+            title = "Loading lab...",
+            description = "Fetching your uploaded resumes.",
+            actions = { CircularProgressIndicator(color = RoyalBlue) }
+        )
+        else -> {
+            ResumeLabScaffold(
+                eyebrow = "Resume Lab",
+                title = "Upload, parse, roast, and export from one place.",
+                description = "Pick a PDF, let Supabase handle the parsing via Edge Functions, then iterate on the output.",
+                targetJobLabel = uiState.targetJob?.let { "${it.title} at ${it.company}" },
+                primaryActionLabel = "Pick PDF resume",
+                secondaryActionLabel = "Open builder",
+                onPrimaryAction = { picker.launch(arrayOf("application/pdf")) },
+                onSecondaryAction = { onOpenBuilder(uiState.targetJob?.id) },
+                loading = uiState.uploadPhase == ResumeUploadPhase.Uploading || uiState.uploadPhase == ResumeUploadPhase.Parsing,
+                message = uiState.errorMessage ?: uiState.infoMessage,
+                isError = uiState.errorMessage != null
+            ) {
+                if (uiState.uploadPhase != ResumeUploadPhase.Idle || uiState.selectedFileName != null) {
+                    StatusPanel(
+                        title = when (uiState.uploadPhase) {
+                            ResumeUploadPhase.Idle -> "Ready to upload"
+                            ResumeUploadPhase.Uploading -> "Uploading to Supabase Storage"
+                            ResumeUploadPhase.Parsing -> "Parsing with Edge Functions"
+                            ResumeUploadPhase.Success -> "Resume parsed and saved"
+                        },
+                        body = uiState.selectedFileName ?: "No file selected yet.",
+                        showProgress = uiState.uploadPhase == ResumeUploadPhase.Uploading || uiState.uploadPhase == ResumeUploadPhase.Parsing
+                    )
+                }
 
-        if (uiState.resumes.isEmpty()) {
-            EmptyResumeState(
-                title = "No uploads yet",
-                body = "Select a PDF to create your first resume row, upload it to `resume-uploads`, and parse it through the backend."
-            )
-        } else {
-            SectionHeader(
-                title = "Uploaded resumes",
-                description = "Tap roast on any parsed resume to get a structured review."
-            )
-            uiState.resumes.forEach { resume ->
-                ResumeSummaryCard(
-                    resume = resume,
-                    onRoast = { onOpenRoast(resume.id, uiState.targetJob?.id) }
-                )
+                if (uiState.resumes.isEmpty()) {
+                    EmptyResumeState(
+                        title = "No uploads yet",
+                        body = "Select a PDF to create your first resume row, upload it to storage, and parse it through the backend."
+                    )
+                } else {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    SectionHeader(
+                        title = "Uploaded resumes",
+                        description = "Tap roast on any parsed resume to get a structured review."
+                    )
+                    uiState.resumes.forEach { resume ->
+                        ResumeSummaryCard(
+                            resume = resume,
+                            onRoast = { onOpenRoast(resume.id, uiState.targetJob?.id) }
+                        )
+                    }
+                }
             }
         }
     }
@@ -652,56 +749,67 @@ fun ResumeRoastScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    ResumeLabScaffold(
-        eyebrow = "Resume Roast",
-        title = "Brutal feedback, still actionable.",
-        description = "Roast a parsed resume against an optional target internship and surface the structured backend result.",
-        targetJobLabel = uiState.targetJob?.let { "${it.title} at ${it.company}" },
-        primaryActionLabel = if (uiState.isRoasting) "Roasting..." else "Roast resume",
-        secondaryActionLabel = null,
-        onPrimaryAction = viewModel::roast,
-        onSecondaryAction = null,
-        loading = uiState.isLoading || uiState.isRoasting,
-        message = uiState.errorMessage ?: uiState.infoMessage
-    ) {
-        val resume = uiState.resume
-        if (resume != null) {
-            StatusPanel(
-                title = resume.fileName ?: "Uploaded resume",
-                body = resume.createdAt ?: "Saved to Supabase.",
-                accent = "Latest score: ${resume.latestScore?.toString() ?: "pending"}"
-            )
-        }
-
-        ModeSelector(
-            selectedMode = uiState.selectedMode,
-            onModeSelected = viewModel::setMode
+    when {
+        uiState.isLoading -> PlaceholderScreen(
+            eyebrow = "Resume Roast",
+            title = "Loading resume...",
+            description = "Fetching parsed document.",
+            actions = { CircularProgressIndicator(color = RoyalBlue) }
         )
+        else -> {
+            ResumeLabScaffold(
+                eyebrow = "Resume Roast",
+                title = "Brutal feedback, strictly actionable.",
+                description = "Roast your parsed resume. Tailored to an optional target job for precision evaluation.",
+                targetJobLabel = uiState.targetJob?.let { "${it.title} at ${it.company}" },
+                primaryActionLabel = if (uiState.isRoasting) "Roasting..." else "Roast resume",
+                secondaryActionLabel = null,
+                onPrimaryAction = viewModel::roast,
+                onSecondaryAction = null,
+                loading = uiState.isRoasting,
+                message = uiState.errorMessage ?: uiState.infoMessage,
+                isError = uiState.errorMessage != null
+            ) {
+                val resume = uiState.resume
+                if (resume != null) {
+                    StatusPanel(
+                        title = resume.fileName ?: "Uploaded resume",
+                        body = resume.createdAt ?: "Saved to Supabase.",
+                        accent = "Latest score: ${resume.latestScore?.toString() ?: "Pending"}"
+                    )
+                }
 
-        val roastSummary = uiState.roastSummary
-        if (roastSummary != null && uiState.roastDetail == null) {
-            ScoreOverviewCard(
-                title = "Latest stored roast",
-                result = ResumeRoastDetail(
-                    resumeId = resume?.id ?: "",
-                    targetJobId = uiState.targetJob?.id,
-                    overallScore = roastSummary.overallScore ?: 0,
-                    atsScore = roastSummary.atsScore ?: 0,
-                    relevanceScore = roastSummary.relevanceScore ?: 0,
-                    clarityScore = roastSummary.clarityScore ?: 0,
-                    formattingScore = roastSummary.formattingScore ?: 0,
-                    roastResult = ResumeRoastResult()
+                ModeSelector(
+                    selectedMode = uiState.selectedMode,
+                    onModeSelected = viewModel::setMode
                 )
-            )
-        }
 
-        uiState.roastDetail?.let { roast ->
-            ScoreOverviewCard(title = "Roast result", result = roast)
-            RoastResultSection("Comments", roast.roastResult.comments)
-            RoastResultSection("Missing keywords", roast.roastResult.missingKeywords)
-            RoastResultSection("Weak bullets", roast.roastResult.weakBullets)
-            RoastResultSection("Rewritten bullets", roast.roastResult.rewrittenBullets)
-            RoastIssuesSection(roast.roastResult.issues)
+                val roastSummary = uiState.roastSummary
+                if (roastSummary != null && uiState.roastDetail == null) {
+                    ScoreOverviewCard(
+                        title = "Latest stored roast",
+                        result = ResumeRoastDetail(
+                            resumeId = resume?.id ?: "",
+                            targetJobId = uiState.targetJob?.id,
+                            overallScore = roastSummary.overallScore ?: 0,
+                            atsScore = roastSummary.atsScore ?: 0,
+                            relevanceScore = roastSummary.relevanceScore ?: 0,
+                            clarityScore = roastSummary.clarityScore ?: 0,
+                            formattingScore = roastSummary.formattingScore ?: 0,
+                            roastResult = ResumeRoastResult()
+                        )
+                    )
+                }
+
+                uiState.roastDetail?.let { roast ->
+                    ScoreOverviewCard(title = "Roast result", result = roast)
+                    RoastResultSection("Comments", roast.roastResult.comments)
+                    RoastResultSection("Missing keywords", roast.roastResult.missingKeywords)
+                    RoastResultSection("Weak bullets", roast.roastResult.weakBullets)
+                    RoastResultSection("Rewritten bullets", roast.roastResult.rewrittenBullets)
+                    RoastIssuesSection(roast.roastResult.issues)
+                }
+            }
         }
     }
 }
@@ -712,73 +820,86 @@ fun ResumeBuilderScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    ResumeLabScaffold(
-        eyebrow = "Resume Builder",
-        title = "Build a resume that matches the role on purpose.",
-        description = "Edit the structured resume sections, generate a backend-backed JSON resume, then export a PDF.",
-        targetJobLabel = uiState.targetJob?.let { "${it.title} at ${it.company}" },
-        primaryActionLabel = if (uiState.isGenerating) "Generating..." else "Generate resume",
-        secondaryActionLabel = if (uiState.generatedResume != null) "Export PDF" else null,
-        onPrimaryAction = viewModel::generateResume,
-        onSecondaryAction = if (uiState.generatedResume != null) viewModel::exportResumePdf else null,
-        loading = uiState.isLoading || uiState.isGenerating || uiState.isExporting,
-        message = uiState.errorMessage ?: uiState.infoMessage
-    ) {
-        SourceResumePicker(
-            sourceResumes = uiState.sourceResumes,
-            selectedSourceResumeId = uiState.selectedSourceResumeId,
-            onSelect = viewModel::selectSourceResume
+    when {
+        uiState.isLoading -> PlaceholderScreen(
+            eyebrow = "Resume Builder",
+            title = "Loading builder...",
+            description = "Fetching builder state and existing data.",
+            actions = { CircularProgressIndicator(color = RoyalBlue) }
         )
+        else -> {
+            ResumeLabScaffold(
+                eyebrow = "Resume Builder",
+                title = "Construct your resume deliberately.",
+                description = "Edit the structured resume sections, generate a backed JSON node, then export to PDF.",
+                targetJobLabel = uiState.targetJob?.let { "${it.title} at ${it.company}" },
+                primaryActionLabel = if (uiState.isGenerating) "Generating..." else "Generate resume JSON",
+                secondaryActionLabel = if (uiState.generatedResume != null) "Export PDF" else null,
+                onPrimaryAction = viewModel::generateResume,
+                onSecondaryAction = if (uiState.generatedResume != null) viewModel::exportResumePdf else null,
+                loading = uiState.isGenerating || uiState.isExporting,
+                message = uiState.errorMessage ?: uiState.infoMessage,
+                isError = uiState.errorMessage != null
+            ) {
+                SourceResumePicker(
+                    sourceResumes = uiState.sourceResumes,
+                    selectedSourceResumeId = uiState.selectedSourceResumeId,
+                    onSelect = viewModel::selectSourceResume
+                )
 
-        BasicsEditor(
-            basics = uiState.basics,
-            onChange = viewModel::setBasics
-        )
+                BasicsEditor(
+                    basics = uiState.basics,
+                    onChange = viewModel::setBasics
+                )
 
-        EditableTextListSection(
-            title = "Skills",
-            description = "Add one skill per row. Keep it role-aware and specific.",
-            items = uiState.skills,
-            onAdd = viewModel::addSkill,
-            onDelete = viewModel::removeSkill,
-            onChange = viewModel::updateSkill
-        )
+                EditableTextListSection(
+                    title = "Skills",
+                    description = "Add one targeted skill per block.",
+                    items = uiState.skills,
+                    onAdd = viewModel::addSkill,
+                    onDelete = viewModel::removeSkill,
+                    onChange = viewModel::updateSkill
+                )
 
-        EditableEducationSection(
-            items = uiState.education,
-            onAdd = viewModel::addEducation,
-            onDelete = viewModel::removeEducation,
-            onChange = viewModel::updateEducation
-        )
+                EditableEducationSection(
+                    items = uiState.education,
+                    onAdd = viewModel::addEducation,
+                    onDelete = viewModel::removeEducation,
+                    onChange = viewModel::updateEducation
+                )
 
-        EditableProjectSection(
-            items = uiState.projects,
-            onAdd = viewModel::addProject,
-            onDelete = viewModel::removeProject,
-            onChange = viewModel::updateProject
-        )
+                EditableProjectSection(
+                    items = uiState.projects,
+                    onAdd = viewModel::addProject,
+                    onDelete = viewModel::removeProject,
+                    onChange = viewModel::updateProject
+                )
 
-        EditableExperienceSection(
-            items = uiState.experience,
-            onAdd = viewModel::addExperience,
-            onDelete = viewModel::removeExperience,
-            onChange = viewModel::updateExperience
-        )
+                EditableExperienceSection(
+                    items = uiState.experience,
+                    onAdd = viewModel::addExperience,
+                    onDelete = viewModel::removeExperience,
+                    onChange = viewModel::updateExperience
+                )
 
-        EditableTextListSection(
-            title = "Achievements",
-            description = "Optional, but useful for role-targeted proof points.",
-            items = uiState.achievements,
-            onAdd = viewModel::addAchievement,
-            onDelete = viewModel::removeAchievement,
-            onChange = viewModel::updateAchievement
-        )
+                EditableTextListSection(
+                    title = "Achievements",
+                    description = "Add proof of success. Keep it measurable.",
+                    items = uiState.achievements,
+                    onAdd = viewModel::addAchievement,
+                    onDelete = viewModel::removeAchievement,
+                    onChange = viewModel::updateAchievement
+                )
 
-        uiState.generatedResume?.let { generated ->
-            GeneratedResumePreview(generated = generated, pdfUrl = uiState.exportedPdfUrl)
+                uiState.generatedResume?.let { generated ->
+                    GeneratedResumePreview(generated = generated, pdfUrl = uiState.exportedPdfUrl)
+                }
+            }
         }
     }
 }
+
+// ── Components Refactored to Premium UI ────────────────────────────
 
 @Composable
 private fun ResumeLabScaffold(
@@ -792,6 +913,7 @@ private fun ResumeLabScaffold(
     onSecondaryAction: (() -> Unit)?,
     loading: Boolean,
     message: String?,
+    isError: Boolean,
     content: @Composable () -> Unit
 ) {
     LazyColumn(
@@ -803,11 +925,12 @@ private fun ResumeLabScaffold(
         verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.large)
     ) {
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.small)) {
+            Column(verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.medium)) {
                 Text(
                     text = eyebrow.uppercase(),
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
+                    color = RoyalBlue,
+                    fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = title,
@@ -820,60 +943,68 @@ private fun ResumeLabScaffold(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 targetJobLabel?.let {
-                    AssistChip(
-                        onClick = {},
-                        label = { Text(it) },
-                        colors = AssistChipDefaults.assistChipColors()
-                    )
-                }
-            }
-        }
-
-        item {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
-            ) {
-                Column(
-                    modifier = Modifier.padding(InternshipUncleTheme.spacing.medium),
-                    verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.medium)
-                ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.small)) {
-                        Button(
-                            onClick = onPrimaryAction,
-                            enabled = !loading,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            if (loading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.height(16.dp),
-                                    strokeWidth = 2.dp
-                                )
-                            }
-                            Text(primaryActionLabel)
-                        }
-                        if (secondaryActionLabel != null && onSecondaryAction != null) {
-                            OutlinedButton(
-                                onClick = onSecondaryAction,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(secondaryActionLabel)
-                            }
-                        }
-                    }
-                    message?.let {
+                    Surface(
+                        color = SkyBlueMedium.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
                         Text(
                             text = it,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = RoyalBlue
                         )
                     }
                 }
             }
         }
 
-        item { content() }
-        item { Spacer(modifier = Modifier.height(InternshipUncleTheme.spacing.small)) }
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                color = PureWhite.copy(alpha = 0.85f),
+                shadowElevation = 4.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    message?.let {
+                        ResumeNoticeCard(
+                            title = if (isError) "Error" else "Info",
+                            body = it,
+                            accent = if (isError) MaterialTheme.colorScheme.error else RoyalBlue,
+                            isDark = !isError
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        PillButton(
+                            modifier = Modifier.weight(1f),
+                            onClick = onPrimaryAction,
+                            enabled = !loading,
+                            isLoading = loading,
+                            label = primaryActionLabel
+                        )
+                        if (secondaryActionLabel != null && onSecondaryAction != null) {
+                            OutlinedPillButton(
+                                modifier = Modifier.weight(1f),
+                                onClick = onSecondaryAction,
+                                enabled = !loading,
+                                label = secondaryActionLabel
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                content()
+            }
+        }
+        item { Spacer(modifier = Modifier.height(96.dp)) }
     }
 }
 
@@ -882,13 +1013,15 @@ private fun ResumeSummaryCard(
     resume: ResumeSummary,
     onRoast: () -> Unit
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = PureWhite.copy(alpha = 0.85f),
+        shadowElevation = 2.dp
     ) {
         Column(
-            modifier = Modifier.padding(InternshipUncleTheme.spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.small)
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
                 text = resume.fileName ?: "Untitled resume",
@@ -900,9 +1033,11 @@ private fun ResumeSummaryCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            TextButton(onClick = onRoast) {
-                Text("Roast this resume")
-            }
+            PillButton(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = onRoast,
+                label = "Roast this resume"
+            )
         }
     }
 }
@@ -914,21 +1049,27 @@ private fun StatusPanel(
     accent: String? = null,
     showProgress: Boolean = false
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = PureWhite.copy(alpha = 0.85f),
+        shadowElevation = 3.dp
     ) {
         Column(
-            modifier = Modifier.padding(InternshipUncleTheme.spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.small)
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             accent?.let {
-                Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Text(it, style = MaterialTheme.typography.labelMedium, color = RoyalBlue)
             }
             if (showProgress) {
-                CircularProgressIndicator()
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    color = RoyalBlue,
+                    trackColor = SkyBlueMedium.copy(alpha = 0.4f)
+                )
             }
         }
     }
@@ -941,7 +1082,7 @@ private fun EmptyResumeState(title: String, body: String) {
 
 @Composable
 private fun SectionHeader(title: String, description: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.small)) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(text = title, style = MaterialTheme.typography.titleLarge)
         Text(
             text = description,
@@ -956,15 +1097,30 @@ private fun ModeSelector(
     selectedMode: String,
     onModeSelected: (String) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.small)) {
-        Text("Roast mode", style = MaterialTheme.typography.titleMedium)
-        Row(horizontalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.small)) {
-            listOf("savage" to "Savage", "recruiter" to "Recruiter").forEach { (value, label) ->
-                FilterChip(
-                    selected = selectedMode == value,
-                    onClick = { onModeSelected(value) },
-                    label = { Text(label) }
-                )
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = PureWhite.copy(alpha = 0.85f),
+        shadowElevation = 2.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text("Roast Mode", style = MaterialTheme.typography.titleMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                listOf("savage" to "Savage (Cruel but fair)", "recruiter" to "Recruiter (Standard)").forEach { (value, label) ->
+                    FilterChip(
+                        selected = selectedMode == value,
+                        onClick = { onModeSelected(value) },
+                        label = { Text(label) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = RoyalBlue,
+                            selectedLabelColor = PureWhite
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                }
             }
         }
     }
@@ -975,36 +1131,48 @@ private fun ScoreOverviewCard(
     title: String,
     result: ResumeRoastDetail
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = DeepNavy,
+        shadowElevation = 6.dp
     ) {
         Column(
-            modifier = Modifier.padding(InternshipUncleTheme.spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.medium)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(title, style = MaterialTheme.typography.titleLarge)
-            Text(
-                text = "Overall ${result.overallScore}/100",
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.SemiBold
-            )
-            ScoreRow("ATS", result.atsScore)
-            ScoreRow("Relevance", result.relevanceScore)
-            ScoreRow("Clarity", result.clarityScore)
-            ScoreRow("Formatting", result.formattingScore)
+            Text(title, style = MaterialTheme.typography.titleMedium, color = PureWhite.copy(alpha = 0.8f))
+            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "${result.overallScore}",
+                    style = MaterialTheme.typography.displayLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = PureWhite
+                )
+                Text(
+                    text = "/100 overall",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = PureWhite.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            ScoreRow("ATS Optimization", result.atsScore)
+            ScoreRow("Role Relevance", result.relevanceScore)
+            ScoreRow("Writing Clarity", result.clarityScore)
+            ScoreRow("Visual Formatting", result.formattingScore)
         }
     }
 }
 
 @Composable
 private fun ScoreRow(label: String, score: Int) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(label, style = MaterialTheme.typography.labelLarge)
-            Text("$score/100", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text(label, style = MaterialTheme.typography.bodyLarge, color = PureWhite)
+            Text("$score", style = MaterialTheme.typography.titleMedium, color = SkyBlueMedium)
         }
-        HorizontalDivider()
+        HorizontalDivider(color = PureWhite.copy(alpha = 0.1f))
     }
 }
 
@@ -1014,21 +1182,26 @@ private fun RoastResultSection(
     items: List<String>
 ) {
     if (items.isEmpty()) return
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = PureWhite.copy(alpha = 0.85f),
+        shadowElevation = 3.dp
     ) {
         Column(
-            modifier = Modifier.padding(InternshipUncleTheme.spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.small)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             items.forEach { item ->
-                Text(
-                    text = "• $item",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("•", color = RoyalBlue)
+                    Text(
+                        text = item,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
@@ -1037,20 +1210,22 @@ private fun RoastResultSection(
 @Composable
 private fun RoastIssuesSection(items: List<ResumeRoastIssue>) {
     if (items.isEmpty()) return
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
+        shadowElevation = 2.dp
     ) {
         Column(
-            modifier = Modifier.padding(InternshipUncleTheme.spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.small)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Issues", style = MaterialTheme.typography.titleMedium)
+            Text("Critical Issues", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
             items.forEach { issue ->
                 Text(
                     text = listOfNotNull(issue.section, issue.severity, issue.message).joinToString(" • "),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
         }
@@ -1065,15 +1240,30 @@ private fun SourceResumePicker(
 ) {
     if (sourceResumes.isEmpty()) return
 
-    Column(verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.small)) {
-        Text("Source resume", style = MaterialTheme.typography.titleMedium)
-        Row(horizontalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.small)) {
-            sourceResumes.take(4).forEach { resume ->
-                FilterChip(
-                    selected = selectedSourceResumeId == resume.id,
-                    onClick = { onSelect(resume.id) },
-                    label = { Text(resume.fileName ?: "Resume") }
-                )
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = PureWhite.copy(alpha = 0.85f),
+        shadowElevation = 2.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text("Source resume seed", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                sourceResumes.take(4).forEach { resume ->
+                    FilterChip(
+                        selected = selectedSourceResumeId == resume.id,
+                        onClick = { onSelect(resume.id) },
+                        label = { Text(resume.fileName ?: "Resume") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = RoyalBlue,
+                            selectedLabelColor = PureWhite
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                }
             }
         }
     }
@@ -1084,23 +1274,14 @@ private fun BasicsEditor(
     basics: ResumeBasicsEditor,
     onChange: (ResumeBasicsEditor) -> Unit
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-    ) {
-        Column(
-            modifier = Modifier.padding(InternshipUncleTheme.spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.medium)
-        ) {
-            Text("Basics", style = MaterialTheme.typography.titleLarge)
-            EditableTextField("Name", basics.name) { onChange(basics.copy(name = it)) }
-            EditableTextField("Email", basics.email) { onChange(basics.copy(email = it)) }
-            EditableTextField("Phone", basics.phone) { onChange(basics.copy(phone = it)) }
-            EditableTextField("Location", basics.location) { onChange(basics.copy(location = it)) }
-            EditableTextField("LinkedIn", basics.linkedin) { onChange(basics.copy(linkedin = it)) }
-            EditableTextField("GitHub", basics.github) { onChange(basics.copy(github = it)) }
-            EditableTextField("Portfolio", basics.portfolio) { onChange(basics.copy(portfolio = it)) }
-        }
+    EditorSectionContainer(title = "Basics", description = "Your core contact identity.") {
+        EditableTextField("Full Name", basics.name) { onChange(basics.copy(name = it)) }
+        EditableTextField("Email Address", basics.email) { onChange(basics.copy(email = it)) }
+        EditableTextField("Phone Number", basics.phone) { onChange(basics.copy(phone = it)) }
+        EditableTextField("Location", basics.location) { onChange(basics.copy(location = it)) }
+        EditableTextField("LinkedIn URL", basics.linkedin) { onChange(basics.copy(linkedin = it)) }
+        EditableTextField("GitHub URL", basics.github) { onChange(basics.copy(github = it)) }
+        EditableTextField("Portfolio URL", basics.portfolio) { onChange(basics.copy(portfolio = it)) }
     }
 }
 
@@ -1113,32 +1294,25 @@ private fun EditableTextListSection(
     onDelete: (String) -> Unit,
     onChange: (String, String) -> Unit
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+    EditorSectionContainer(
+        title = title,
+        description = description,
+        onAdd = onAdd
     ) {
-        Column(
-            modifier = Modifier.padding(InternshipUncleTheme.spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.medium)
-        ) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(title, style = MaterialTheme.typography.titleLarge)
-                    Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                TextButton(onClick = onAdd) { Text("Add") }
-            }
-            items.forEach { item ->
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    EditableTextField(
-                        label = title.dropLastWhile { it == 's' },
-                        value = item.value,
-                        modifier = Modifier.weight(1f),
-                        onValueChange = { onChange(item.id, it) }
-                    )
-                    IconButton(onClick = { onDelete(item.id) }) {
-                        Text("×", style = MaterialTheme.typography.titleLarge)
-                    }
+        items.forEach { item ->
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                EditableTextField(
+                    label = title.dropLastWhile { it == 's' },
+                    value = item.value,
+                    modifier = Modifier.weight(1f),
+                    onValueChange = { onChange(item.id, it) }
+                )
+                IconButton(onClick = { onDelete(item.id) }) {
+                    Text("×", style = MaterialTheme.typography.headlineMedium, color = CoolGray)
                 }
             }
         }
@@ -1152,28 +1326,28 @@ private fun EditableEducationSection(
     onDelete: (String) -> Unit,
     onChange: (String, (ResumeEducationEditor) -> ResumeEducationEditor) -> Unit
 ) {
-    EditorSectionCard(
+    EditorSectionContainer(
         title = "Education",
         description = "Keep it concise and recent. One row per entry.",
         onAdd = onAdd
     ) {
         items.forEach { item ->
-            Column(verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.small)) {
-                EditableTextField("School", item.school) { value -> onChange(item.id) { it.copy(school = value) } }
-                EditableTextField("Degree", item.degree) { value -> onChange(item.id) { it.copy(degree = value) } }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    EditableTextField("Start", item.start, modifier = Modifier.weight(1f)) { value ->
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                EditableTextField("School / University", item.school) { value -> onChange(item.id) { it.copy(school = value) } }
+                EditableTextField("Degree / Field of Study", item.degree) { value -> onChange(item.id) { it.copy(degree = value) } }
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    EditableTextField("Start Date", item.start, modifier = Modifier.weight(1f)) { value ->
                         onChange(item.id) { it.copy(start = value) }
                     }
-                    EditableTextField("End", item.end, modifier = Modifier.weight(1f)) { value ->
+                    EditableTextField("End Date", item.end, modifier = Modifier.weight(1f)) { value ->
                         onChange(item.id) { it.copy(end = value) }
                     }
                     EditableTextField("GPA", item.gpa, modifier = Modifier.weight(1f)) { value ->
                         onChange(item.id) { it.copy(gpa = value) }
                     }
                 }
-                TextButton(onClick = { onDelete(item.id) }) { Text("Delete education entry") }
-                HorizontalDivider()
+                TextButton(onClick = { onDelete(item.id) }) { Text("− Remove education entry", color = MaterialTheme.colorScheme.error) }
+                HorizontalDivider(color = CoolGray.copy(alpha = 0.2f))
             }
         }
     }
@@ -1186,20 +1360,20 @@ private fun EditableProjectSection(
     onDelete: (String) -> Unit,
     onChange: (String, (ResumeProjectEditor) -> ResumeProjectEditor) -> Unit
 ) {
-    EditorSectionCard(
+    EditorSectionContainer(
         title = "Projects",
-        description = "Describe impact, not just activity.",
+        description = "Describe impact, not just activity. Frame your projects around the roles you want.",
         onAdd = onAdd
     ) {
         items.forEach { item ->
-            Column(verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.small)) {
-                EditableTextField("Project name", item.name) { value -> onChange(item.id) { it.copy(name = value) } }
-                EditableTextField("Description", item.description) { value -> onChange(item.id) { it.copy(description = value) } }
-                EditableMultilineField("Highlights (one per line)", item.highlights) { value ->
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                EditableTextField("Project Title", item.name) { value -> onChange(item.id) { it.copy(name = value) } }
+                EditableTextField("Short Description or Tech Stack", item.description) { value -> onChange(item.id) { it.copy(description = value) } }
+                EditableMultilineField("Impact Highlights (One per line)", item.highlights) { value ->
                     onChange(item.id) { it.copy(highlights = value) }
                 }
-                TextButton(onClick = { onDelete(item.id) }) { Text("Delete project") }
-                HorizontalDivider()
+                TextButton(onClick = { onDelete(item.id) }) { Text("− Remove project", color = MaterialTheme.colorScheme.error) }
+                HorizontalDivider(color = CoolGray.copy(alpha = 0.2f))
             }
         }
     }
@@ -1212,54 +1386,58 @@ private fun EditableExperienceSection(
     onDelete: (String) -> Unit,
     onChange: (String, (ResumeExperienceEditor) -> ResumeExperienceEditor) -> Unit
 ) {
-    EditorSectionCard(
+    EditorSectionContainer(
         title = "Experience",
-        description = "Use it for internships, freelance work, or campus work experience.",
+        description = "Internships, freelance work, or campus work experience.",
         onAdd = onAdd
     ) {
         items.forEach { item ->
-            Column(verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.small)) {
-                EditableTextField("Company", item.company) { value -> onChange(item.id) { it.copy(company = value) } }
-                EditableTextField("Role", item.role) { value -> onChange(item.id) { it.copy(role = value) } }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    EditableTextField("Start", item.start, modifier = Modifier.weight(1f)) { value ->
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                EditableTextField("Company / Organization", item.company) { value -> onChange(item.id) { it.copy(company = value) } }
+                EditableTextField("Role Title", item.role) { value -> onChange(item.id) { it.copy(role = value) } }
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    EditableTextField("Start Date", item.start, modifier = Modifier.weight(1f)) { value ->
                         onChange(item.id) { it.copy(start = value) }
                     }
-                    EditableTextField("End", item.end, modifier = Modifier.weight(1f)) { value ->
+                    EditableTextField("End Date", item.end, modifier = Modifier.weight(1f)) { value ->
                         onChange(item.id) { it.copy(end = value) }
                     }
                 }
-                EditableMultilineField("Bullets (one per line)", item.bullets) { value ->
+                EditableMultilineField("Responsibilities & Impact (One bullet per line)", item.bullets) { value ->
                     onChange(item.id) { it.copy(bullets = value) }
                 }
-                TextButton(onClick = { onDelete(item.id) }) { Text("Delete experience") }
-                HorizontalDivider()
+                TextButton(onClick = { onDelete(item.id) }) { Text("− Remove experience", color = MaterialTheme.colorScheme.error) }
+                HorizontalDivider(color = CoolGray.copy(alpha = 0.2f))
             }
         }
     }
 }
 
 @Composable
-private fun EditorSectionCard(
+private fun EditorSectionContainer(
     title: String,
     description: String,
-    onAdd: () -> Unit,
+    onAdd: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = PureWhite.copy(alpha = 0.85f),
+        shadowElevation = 3.dp
     ) {
         Column(
-            modifier = Modifier.padding(InternshipUncleTheme.spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.medium)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.weight(1f)) {
                     Text(title, style = MaterialTheme.typography.titleLarge)
                     Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                TextButton(onClick = onAdd) { Text("Add") }
+                if (onAdd != null) {
+                    TextButton(onClick = onAdd) { Text("+ Add") }
+                }
             }
             content()
         }
@@ -1272,25 +1450,31 @@ private fun GeneratedResumePreview(
     pdfUrl: String?
 ) {
     val context = LocalContext.current
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = SkyBlueMedium.copy(alpha = 0.1f),
+        border = BorderStroke(1.dp, RoyalBlue.copy(alpha = 0.3f)),
+        shadowElevation = 2.dp
     ) {
         Column(
-            modifier = Modifier.padding(InternshipUncleTheme.spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.medium)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("Generated resume", style = MaterialTheme.typography.titleLarge)
-            Text("Template: ${generated.templateName}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Generated output", style = MaterialTheme.typography.titleLarge, color = DeepNavy)
+            Text("Engine: ${generated.templateName}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (pdfUrl != null) {
-                Text(
-                    "PDF exported and ready to open.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
+                ResumeNoticeCard(
+                    title = "PDF Exported successfully",
+                    body = "Ready to download or print.",
+                    accent = RoyalBlue,
+                    isDark = true
                 )
-                OutlinedButton(onClick = { openExternalUrl(context, pdfUrl) }) {
-                    Text("Open PDF")
-                }
+                PillButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { openExternalUrl(context, pdfUrl) },
+                    label = "Open PDF Document"
+                )
             }
             ResumePreviewSection("Basics", listOfNotNull(
                 generated.resumeJson.basics.name.takeIf(String::isNotBlank),
@@ -1335,8 +1519,8 @@ private fun openExternalUrl(context: Context, url: String) {
 @Composable
 private fun ResumePreviewSection(title: String, items: List<String>) {
     if (items.isEmpty()) return
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(title, style = MaterialTheme.typography.titleMedium)
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(title, style = MaterialTheme.typography.titleMedium, color = RoyalBlue)
         items.forEach { item ->
             Text(
                 text = "• $item",
@@ -1360,7 +1544,11 @@ private fun EditableTextField(
         onValueChange = onValueChange,
         label = { Text(label) },
         modifier = modifier.fillMaxWidth(),
-        singleLine = true
+        shape = RoundedCornerShape(12.dp),
+        singleLine = true,
+        colors = OutlinedTextFieldDefaults.colors(
+            unfocusedBorderColor = CoolGray.copy(alpha = 0.5f)
+        )
     )
 }
 
@@ -1375,8 +1563,12 @@ private fun EditableMultilineField(
         onValueChange = onValueChange,
         label = { Text(label) },
         modifier = Modifier.fillMaxWidth(),
-        minLines = 2,
-        maxLines = 4
+        minLines = 3,
+        maxLines = 6,
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            unfocusedBorderColor = CoolGray.copy(alpha = 0.5f)
+        )
     )
 }
 

@@ -1,38 +1,62 @@
 package com.internshipuncle.core.ui
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.internshipuncle.core.design.CoolGray
+import com.internshipuncle.core.design.DeepNavy
+import com.internshipuncle.core.design.FrostWhite
 import com.internshipuncle.core.design.InternshipUncleTheme
-
-import androidx.compose.ui.graphics.vector.ImageVector
+import com.internshipuncle.core.design.NavPillDark
+import com.internshipuncle.core.design.PaleBlue
+import com.internshipuncle.core.design.PureWhite
+import com.internshipuncle.core.design.RoyalBlue
+import com.internshipuncle.core.design.SkyBlueLight
+import com.internshipuncle.core.design.SkyBlueMedium
 
 data class TopLevelDestination(
     val label: String,
@@ -40,7 +64,6 @@ data class TopLevelDestination(
     val icon: ImageVector? = null
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppShell(
     title: String,
@@ -50,83 +73,113 @@ fun AppShell(
     onDestinationSelected: (String) -> Unit,
     content: @Composable (PaddingValues) -> Unit
 ) {
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = "Internship Uncle",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            )
-        },
-        bottomBar = {
-            if (showBottomBar) {
-                Surface(
-                    tonalElevation = 0.dp,
-                    color = MaterialTheme.colorScheme.surface
-                ) {
-                    Column {
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = InternshipUncleTheme.spacing.medium, vertical = 10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            destinations.forEach { destination ->
-                                AppBottomBarItem(
-                                    label = destination.label,
-                                    selected = destination.route == selectedRoute,
-                                    onClick = { onDestinationSelected(destination.route) }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        content = content
-    )
-}
-
-@Composable
-private fun AppBottomBarItem(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    val indicatorColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-    Column(
+    Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(SkyBlueLight, SkyBlueMedium)
+                )
+            )
     ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .clip(CircleShape)
-                .background(indicatorColor)
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onBackground,
+            topBar = {},
+            bottomBar = {
+                if (showBottomBar) {
+                    AppBottomBar(
+                        destinations = destinations,
+                        selectedRoute = selectedRoute,
+                        onDestinationSelected = onDestinationSelected
+                    )
+                }
+            },
+            content = content
         )
     }
 }
+
+@Composable
+private fun AppBottomBar(
+    destinations: List<TopLevelDestination>,
+    selectedRoute: String?,
+    onDestinationSelected: (String) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 20.dp)
+            .windowInsetsPadding(WindowInsets.navigationBars),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Surface(
+            shape = RoundedCornerShape(32.dp),
+            color = PureWhite.copy(alpha = 0.90f),
+            shadowElevation = 8.dp,
+            tonalElevation = 0.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                destinations.forEach { destination ->
+                    val isSelected = destination.route == selectedRoute
+                    AppNavItem(
+                        icon = destination.icon,
+                        isSelected = isSelected,
+                        onClick = { onDestinationSelected(destination.route) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AppNavItem(
+    icon: ImageVector?,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val bgColor by animateColorAsState(
+        targetValue = if (isSelected) RoyalBlue else Color.Transparent,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "navItemBg"
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (isSelected) PureWhite else CoolGray,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "navItemContent"
+    )
+
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .clip(CircleShape)
+            .clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() },
+                onClick = onClick
+            )
+            .background(bgColor, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = contentColor
+            )
+        }
+    }
+}
+
+// ── Shared UI Components ──────────────────────────────────────────────
 
 @Composable
 fun PlaceholderScreen(
@@ -141,43 +194,54 @@ fun PlaceholderScreen(
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = InternshipUncleTheme.spacing.medium, vertical = InternshipUncleTheme.spacing.large),
-        verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.large)
+        verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.mediumLarge)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.small)) {
-            Text(
-                text = eyebrow.uppercase(),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = title,
-                style = MaterialTheme.typography.displayLarge,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        // Hero card
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            color = PureWhite.copy(alpha = 0.85f),
+            shadowElevation = 4.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = eyebrow.uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = RoyalBlue,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
         if (sections.isNotEmpty()) {
             sections.forEach { (sectionTitle, sectionBody) ->
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    shape = RoundedCornerShape(18.dp)
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    color = PureWhite.copy(alpha = 0.8f),
+                    shadowElevation = 2.dp
                 ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(InternshipUncleTheme.spacing.medium),
+                        modifier = Modifier.padding(20.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
                             text = sectionTitle,
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
                         )
                         Text(
                             text = sectionBody,

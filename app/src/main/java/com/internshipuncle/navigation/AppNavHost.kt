@@ -5,6 +5,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Analytics
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.RecordVoiceOver
+import androidx.compose.material.icons.outlined.WorkOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -58,11 +64,12 @@ fun InternshipUncleApp() {
     val currentRoute = backStackEntry?.destination?.route
 
     val topLevelDestinations = listOf(
-        TopLevelDestination("Jobs", AppDestination.Jobs.route, androidx.compose.material.icons.Icons.Outlined.WorkOutline),
-        TopLevelDestination("Analyze", AppDestination.Analyze.route, androidx.compose.material.icons.Icons.Outlined.Analytics),
-        TopLevelDestination("Resume", AppDestination.ResumeUpload.createRoute(), androidx.compose.material.icons.Icons.Outlined.Description),
-        TopLevelDestination("Interview", AppDestination.MockInterview.createRoute(), androidx.compose.material.icons.Icons.Outlined.RecordVoiceOver),
-        TopLevelDestination("Dashboard", AppDestination.Dashboard.route, androidx.compose.material.icons.Icons.Outlined.Home)
+        TopLevelDestination("Jobs", AppDestination.Jobs.route, Icons.Outlined.WorkOutline),
+        TopLevelDestination("Analyze", AppDestination.Analyze.route, Icons.Outlined.Analytics),
+        TopLevelDestination("Resume", AppDestination.ResumeUpload.createRoute(), Icons.Outlined.Description),
+        TopLevelDestination("Interview", AppDestination.MockInterview.createRoute(), Icons.Outlined.RecordVoiceOver),
+        TopLevelDestination("Dashboard", AppDestination.Dashboard.route, Icons.Outlined.Home)
+    )
 
     val showBottomBar = currentDestination?.hierarchy?.any { destination ->
         topLevelDestinations.any { routeMatches(destination.route, it.route) }
