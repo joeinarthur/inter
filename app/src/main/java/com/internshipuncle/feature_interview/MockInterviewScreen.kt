@@ -1305,18 +1305,12 @@ private fun EvaluationCard(
 
 @Composable
 private fun SavedAnswerCard(answer: MockInterviewAnswerEvaluation) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = SurfaceLight.copy(alpha = 0.15f)
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text("Logged answer", style = MaterialTheme.typography.labelMedium, color = InkBlack)
-            Text(answer.answerText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+        Text("Logged answer", style = MaterialTheme.typography.labelMedium, color = SlateGray)
+        Text(answer.answerText, style = MaterialTheme.typography.bodyLarge, color = InkBlack)
     }
 }
 
@@ -1327,11 +1321,11 @@ private fun FeedbackListCard(
     isDark: Boolean = false
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(title, style = MaterialTheme.typography.titleMedium, color = if (isDark) PureWhite else MaterialTheme.colorScheme.onSurface)
+        Text(title, style = MaterialTheme.typography.titleMedium, color = if (isDark) PureWhite else InkBlack)
         values.forEach { value ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("•", color = if (isDark) SurfaceLight else InkBlack)
-                Text(value, style = MaterialTheme.typography.bodyMedium, color = if (isDark) PureWhite.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(value, style = MaterialTheme.typography.bodyLarge, color = if (isDark) PureWhite.copy(alpha = 0.8f) else SlateGray)
             }
         }
     }
@@ -1340,12 +1334,20 @@ private fun FeedbackListCard(
 @Composable
 private fun ImprovedAnswerCard(text: String) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = PureWhite.copy(alpha = 0.1f)
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = SurfaceGray,
+        shadowElevation = 0.dp
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text("Ideal phrasing", style = MaterialTheme.typography.titleMedium, color = InkBlack, fontWeight = FontWeight.Bold)
+            Text(text, style = MaterialTheme.typography.bodyLarge, color = SlateGray)
+        }
+    }
+}
       @Composable
 private fun SessionHeaderCard(
     session: MockInterviewSessionDetail?,

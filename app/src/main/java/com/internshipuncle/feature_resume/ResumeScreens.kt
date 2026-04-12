@@ -1016,32 +1016,27 @@ private fun ResumeSummaryCard(
     resume: ResumeSummary,
     onRoast: () -> Unit
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = SurfaceGray,
-        shadowElevation = 0.dp
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = resume.fileName ?: "Untitled resume",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = "Latest score: ${resume.latestScore?.toString() ?: "pending"}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = SlateGray
-            )
-            PillButton(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = onRoast,
-                label = "Roast this resume"
-            )
-        }
+        Text(
+            text = resume.fileName ?: "Untitled resume",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = InkBlack
+        )
+        Text(
+            text = "Latest score: ${resume.latestScore?.toString() ?: "pending"}",
+            style = MaterialTheme.typography.bodyLarge,
+            color = SlateGray
+        )
+        PillButton(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onRoast,
+            label = "Roast this resume"
+        )
+        HorizontalDivider(color = DividerGray)
     }
 }
 
@@ -1052,29 +1047,24 @@ private fun StatusPanel(
     accent: String? = null,
     showProgress: Boolean = false
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = SurfaceGray,
-        shadowElevation = 0.dp
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            accent?.let {
-                Text(it, style = MaterialTheme.typography.labelMedium, color = InkBlack)
-            }
-            if (showProgress) {
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    color = InkBlack,
-                    trackColor = SurfaceLight.copy(alpha = 0.4f)
-                )
-            }
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = InkBlack)
+        Text(body, style = MaterialTheme.typography.bodyLarge, color = SlateGray)
+        accent?.let {
+            Text(it, style = MaterialTheme.typography.labelMedium, color = InkBlack)
         }
+        if (showProgress) {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                color = InkBlack,
+                trackColor = SurfaceGray
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        HorizontalDivider(color = DividerGray)
     }
 }
 
@@ -1100,32 +1090,26 @@ private fun ModeSelector(
     selectedMode: String,
     onModeSelected: (String) -> Unit
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = SurfaceGray,
-        shadowElevation = 0.dp
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text("Roast Mode", style = MaterialTheme.typography.titleMedium)
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                listOf("savage" to "Savage (Cruel but fair)", "recruiter" to "Recruiter (Standard)").forEach { (value, label) ->
-                    FilterChip(
-                        selected = selectedMode == value,
-                        onClick = { onModeSelected(value) },
-                        label = { Text(label) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = InkBlack,
-                            selectedLabelColor = PureWhite
-                        ),
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                }
+        Text("Roast Mode", style = MaterialTheme.typography.titleMedium, color = InkBlack)
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            listOf("savage" to "Savage (Cruel but fair)", "recruiter" to "Recruiter (Standard)").forEach { (value, label) ->
+                FilterChip(
+                    selected = selectedMode == value,
+                    onClick = { onModeSelected(value) },
+                    label = { Text(label) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = InkBlack,
+                        selectedLabelColor = PureWhite
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                )
             }
         }
+        HorizontalDivider(color = DividerGray)
     }
 }
 
@@ -1134,37 +1118,31 @@ private fun ScoreOverviewCard(
     title: String,
     result: ResumeRoastDetail
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = CharcoalDark,
-        shadowElevation = 0.dp
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = PureWhite.copy(alpha = 0.8f))
-            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "${result.overallScore}",
-                    style = MaterialTheme.typography.displayLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = PureWhite
-                )
-                Text(
-                    text = "/100 overall",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = SurfaceGray,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            ScoreRow("ATS Optimization", result.atsScore)
-            ScoreRow("Role Relevance", result.relevanceScore)
-            ScoreRow("Writing Clarity", result.clarityScore)
-            ScoreRow("Visual Formatting", result.formattingScore)
+        Text(title, style = MaterialTheme.typography.titleMedium, color = SlateGray)
+        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = "${result.overallScore}",
+                style = MaterialTheme.typography.displayLarge,
+                fontWeight = FontWeight.Bold,
+                color = InkBlack
+            )
+            Text(
+                text = "/100 overall",
+                style = MaterialTheme.typography.titleMedium,
+                color = SlateGray,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
         }
+        Spacer(modifier = Modifier.height(4.dp))
+        ScoreRow("ATS Optimization", result.atsScore)
+        ScoreRow("Role Relevance", result.relevanceScore)
+        ScoreRow("Writing Clarity", result.clarityScore)
+        ScoreRow("Visual Formatting", result.formattingScore)
+        HorizontalDivider(color = DividerGray)
     }
 }
 
@@ -1172,10 +1150,10 @@ private fun ScoreOverviewCard(
 private fun ScoreRow(label: String, score: Int) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(label, style = MaterialTheme.typography.bodyLarge, color = PureWhite)
-            Text("$score", style = MaterialTheme.typography.titleMedium, color = SurfaceLight)
+            Text(label, style = MaterialTheme.typography.bodyLarge, color = InkBlack)
+            Text("$score", style = MaterialTheme.typography.titleMedium, color = SlateGray)
         }
-        HorizontalDivider(color = PureWhite.copy(alpha = 0.1f))
+        HorizontalDivider(color = DividerGray)
     }
 }
 
@@ -1185,53 +1163,41 @@ private fun RoastResultSection(
     items: List<String>
 ) {
     if (items.isEmpty()) return
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = SurfaceGray,
-        shadowElevation = 0.dp
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            items.forEach { item ->
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("•", color = InkBlack)
-                    Text(
-                        text = item,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = SlateGray
-                    )
-                }
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = InkBlack)
+        items.forEach { item ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("•", color = InkBlack)
+                Text(
+                    text = item,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = SlateGray
+                )
             }
         }
+        HorizontalDivider(color = DividerGray)
     }
 }
 
 @Composable
 private fun RoastIssuesSection(items: List<ResumeRoastIssue>) {
     if (items.isEmpty()) return
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
-        shadowElevation = 0.dp
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text("Critical Issues", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
-            items.forEach { issue ->
-                Text(
-                    text = listOfNotNull(issue.section, issue.severity, issue.message).joinToString(" • "),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
-            }
+        Text("Critical Issues", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
+        items.forEach { issue ->
+            Text(
+                text = listOfNotNull(issue.section, issue.severity, issue.message).joinToString(" • "),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.error
+            )
         }
+        HorizontalDivider(color = DividerGray)
     }
 }
 
@@ -1243,32 +1209,26 @@ private fun SourceResumePicker(
 ) {
     if (sourceResumes.isEmpty()) return
 
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = SurfaceGray,
-        shadowElevation = 0.dp
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text("Source resume seed", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                sourceResumes.take(4).forEach { resume ->
-                    FilterChip(
-                        selected = selectedSourceResumeId == resume.id,
-                        onClick = { onSelect(resume.id) },
-                        label = { Text(resume.fileName ?: "Resume") },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = InkBlack,
-                            selectedLabelColor = PureWhite
-                        ),
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                }
+        Text("Source resume seed", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = InkBlack)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            sourceResumes.take(4).forEach { resume ->
+                FilterChip(
+                    selected = selectedSourceResumeId == resume.id,
+                    onClick = { onSelect(resume.id) },
+                    label = { Text(resume.fileName ?: "Resume") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = InkBlack,
+                        selectedLabelColor = PureWhite
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                )
             }
         }
+        HorizontalDivider(color = DividerGray)
     }
 }
 
