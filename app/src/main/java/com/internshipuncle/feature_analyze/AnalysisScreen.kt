@@ -235,27 +235,23 @@ private fun AnalysisSectionCard(
     title: String,
     body: String
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = SurfaceGray,
-        shadowElevation = 0.dp
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = body,
-                style = MaterialTheme.typography.bodyMedium,
-                color = SlateGray
-            )
-        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = InkBlack,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            text = body,
+            style = MaterialTheme.typography.bodyLarge,
+            color = SlateGray
+        )
+        Spacer(Modifier.height(8.dp))
+        HorizontalDivider(color = DividerGray)
     }
 }
 
@@ -264,39 +260,36 @@ private fun AnalysisListCard(
     title: String,
     values: List<String>
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = SurfaceGray,
-        shadowElevation = 0.dp
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            values.forEachIndexed { index, value ->
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "•",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = InkBlack
-                    )
-                    Text(
-                        text = value,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = SlateGray
-                    )
-                }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = InkBlack,
+            fontWeight = FontWeight.SemiBold
+        )
+        values.forEachIndexed { index, value ->
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "•",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = InkBlack,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = SlateGray
+                )
             }
         }
+        Spacer(Modifier.height(8.dp))
+        HorizontalDivider(color = DividerGray)
     }
 }
 
@@ -306,25 +299,25 @@ private fun AnalysisNoticeCard(
     body: String
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = CharcoalDark,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = SurfaceGray,
         shadowElevation = 0.dp
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = PureWhite
+                style = MaterialTheme.typography.titleSmall,
+                color = InkBlack,
+                fontWeight = FontWeight.Bold
             )
             Text(
                 text = body,
                 style = MaterialTheme.typography.bodyMedium,
-                color = PureWhite.copy(alpha = 0.8f)
+                color = SlateGray
             )
         }
     }

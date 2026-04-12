@@ -1363,55 +1363,41 @@ private fun ImprovedAnswerCard(text: String) {
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text("Ideal phrasing", style = MaterialTheme.typography.titleMedium, color = PureWhite)
-            Text(text, style = MaterialTheme.typography.bodyMedium, color = PureWhite.copy(alpha = 0.8f))
-        }
-    }
-}
-
-@Composable
+      @Composable
 private fun SessionHeaderCard(
     session: MockInterviewSessionDetail?,
     progressLabel: String,
     progressFraction: Float
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = SurfaceGray,
-        shadowElevation = 0.dp
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = session?.roleName ?: "Mock Session",
-                style = MaterialTheme.typography.titleLarge
-            )
-            Text(
-                text = listOfNotNull(
-                    session?.difficulty?.replaceFirstChar(Char::uppercase),
-                    session?.mode?.replace('_', ' ')
-                ).joinToString(" - "),
-                style = MaterialTheme.typography.bodyMedium,
-                color = SlateGray
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Progress", style = MaterialTheme.typography.labelSmall, color = SlateGray)
-                    Text(progressLabel, style = MaterialTheme.typography.labelSmall, color = InkBlack, fontWeight = FontWeight.SemiBold)
-                }
-                LinearProgressIndicator(
-                    progress = progressFraction,
-                    modifier = Modifier.fillMaxWidth(),
-                    color = InkBlack,
-                    trackColor = SurfaceLight.copy(alpha = 0.4f)
-                )
+        Text(
+            text = session?.roleName ?: "Mock Session",
+            style = MaterialTheme.typography.titleLarge
+        )
+        Text(
+            text = listOfNotNull(
+                session?.difficulty?.replaceFirstChar(Char::uppercase),
+                session?.mode?.replace('_', ' ')
+            ).joinToString(" - "),
+            style = MaterialTheme.typography.bodyMedium,
+            color = SlateGray
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Progress", style = MaterialTheme.typography.labelSmall, color = SlateGray)
+                Text(progressLabel, style = MaterialTheme.typography.labelSmall, color = InkBlack, fontWeight = FontWeight.SemiBold)
             }
+            LinearProgressIndicator(
+                progress = { progressFraction },
+                modifier = Modifier.fillMaxWidth(),
+                color = InkBlack,
+                trackColor = SurfaceGray
+            )
         }
+        HorizontalDivider(color = DividerGray)
     }
 }
 

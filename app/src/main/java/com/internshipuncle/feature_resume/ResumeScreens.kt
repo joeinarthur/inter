@@ -1423,27 +1423,21 @@ private fun EditorSectionContainer(
     onAdd: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = SurfaceGray,
-        shadowElevation = 0.dp
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.weight(1f)) {
-                    Text(title, style = MaterialTheme.typography.titleLarge)
-                    Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                if (onAdd != null) {
-                    TextButton(onClick = onAdd) { Text("+ Add") }
-                }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleLarge)
+                Text(description, style = MaterialTheme.typography.bodySmall, color = SlateGray)
             }
-            content()
+            if (onAdd != null) {
+                TextButton(onClick = onAdd) { Text("+ Add", color = InkBlack) }
+            }
         }
+        content()
+        HorizontalDivider(color = DividerGray)
     }
 }
 
