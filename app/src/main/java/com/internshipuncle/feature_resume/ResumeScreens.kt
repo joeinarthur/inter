@@ -693,18 +693,18 @@ fun ResumeUploadScreen(
 
     when {
         uiState.isLoading -> PlaceholderScreen(
-            eyebrow = "Resume Lab",
-            title = "Loading lab...",
-            description = "Fetching your uploaded resumes.",
+            eyebrow = "SECURE DOCUMENT ANALYSIS",
+            title = "Loading Resume Lab",
+            description = "Fetching your uploaded documents for review.",
             actions = { CircularProgressIndicator(color = InkBlack) }
         )
         else -> {
             ResumeLabScaffold(
-                eyebrow = "Resume Lab",
-                title = "Upload, parse, roast, and export from one place.",
-                description = "Pick a PDF, let Supabase handle the parsing via Edge Functions, then iterate on the output.",
+                eyebrow = "AI TOOLS",
+                title = "Resume Lab",
+                description = "Upload, analyze, and refine your resume in one place.",
                 targetJobLabel = uiState.targetJob?.let { "${it.title} at ${it.company}" },
-                primaryActionLabel = "Pick PDF resume",
+                primaryActionLabel = "Upload PDF resume",
                 secondaryActionLabel = "Open builder",
                 onPrimaryAction = { picker.launch(arrayOf("application/pdf")) },
                 onSecondaryAction = { onOpenBuilder(uiState.targetJob?.id) },
@@ -716,25 +716,25 @@ fun ResumeUploadScreen(
                     StatusPanel(
                         title = when (uiState.uploadPhase) {
                             ResumeUploadPhase.Idle -> "Ready to upload"
-                            ResumeUploadPhase.Uploading -> "Uploading to Supabase Storage"
-                            ResumeUploadPhase.Parsing -> "Parsing with Edge Functions"
-                            ResumeUploadPhase.Success -> "Resume parsed and saved"
+                            ResumeUploadPhase.Uploading -> "Syncing your document"
+                            ResumeUploadPhase.Parsing -> "Extracting profile details"
+                            ResumeUploadPhase.Success -> "Document analyzed successfully"
                         },
-                        body = uiState.selectedFileName ?: "No file selected yet.",
+                        body = uiState.selectedFileName ?: "No file selected.",
                         showProgress = uiState.uploadPhase == ResumeUploadPhase.Uploading || uiState.uploadPhase == ResumeUploadPhase.Parsing
                     )
                 }
 
                 if (uiState.resumes.isEmpty()) {
                     EmptyResumeState(
-                        title = "No uploads yet",
-                        body = "Select a PDF to create your first resume row, upload it to storage, and parse it through the backend."
+                        title = "No documents found",
+                        body = "Upload a PDF to start your AI-powered analysis and get structured feedback."
                     )
                 } else {
                     Spacer(modifier = Modifier.height(16.dp))
                     SectionHeader(
-                        title = "Uploaded resumes",
-                        description = "Tap roast on any parsed resume to get a structured review."
+                        title = "Your Documents",
+                        description = "Get a structured review of your analyzed resumes."
                     )
                     uiState.resumes.forEach { resume ->
                         ResumeSummaryCard(
@@ -927,16 +927,16 @@ private fun ResumeLabScaffold(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     text = eyebrow.uppercase(),
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelSmall,
                     color = SlateGray,
-                    fontWeight = FontWeight.SemiBold
+                    letterSpacing = 1.sp
                 )
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.displaySmall,
+                    style = MaterialTheme.typography.displayMedium,
                     color = InkBlack,
                     fontWeight = FontWeight.Bold
                 )

@@ -191,7 +191,7 @@ fun DashboardScreen(
     when {
         uiState.isLoading -> PlaceholderScreen(
             eyebrow     = "Dashboard",
-            title       = "Loading your readiness",
+            title       = "Refining your workstation",
             description = "Pulling scores, deadlines and activity from Supabase.",
             actions     = {
                 CircularProgressIndicator(
@@ -204,7 +204,7 @@ fun DashboardScreen(
 
         uiState.errorMessage != null -> PlaceholderScreen(
             eyebrow     = "Dashboard",
-            title       = "Dashboard unavailable",
+            title       = "System pause",
             description = uiState.errorMessage ?: "The dashboard could not be loaded.",
             sections    = listOf(
                 "Status" to if (uiState.isConfigured) "Configured but unavailable." else "Supabase config is missing."
@@ -229,7 +229,7 @@ fun DashboardScreen(
     }
 }
 
-// ── Main Dashboard Content — fintech layout ────────────────────────────
+// ── Main Dashboard Content ────────────────────────────────────────────
 
 @Composable
 private fun DashboardContent(
@@ -249,53 +249,38 @@ private fun DashboardContent(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
-        // ── 1. Welcome header (avatar + name + dropdown)
+        // ── 1. Compact Header
         WelcomeHeader(
             userName = uiState.userName,
             userInitials = uiState.userInitials,
             onSignOut = onSignOut
         )
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(20.dp))
 
-        // ── 2. Hero readiness score (fintech balance style)
-        ReadinessHeroSection(uiState = uiState)
+        // ── 2. Momentum Hub (Hero Card)
+        MomentumHub(uiState = uiState)
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(32.dp))
 
-        // ── 3. Primary action buttons (circular icons row — like Top-up/Send)
-        PrimaryActionRow(
-            onOpenJobs      = onOpenJobs,
-            onOpenResumeLab = onOpenResumeLab,
+        // ── 3. Simulation Toolbox (Gallery Cards)
+        ToolboxGallery(
             onOpenInterview = onOpenInterview,
-            onSignOut       = onSignOut,
-            isSigningOut    = uiState.isSigningOut
+            onOpenResumeLab = onOpenResumeLab,
+            onOpenJobs = onOpenJobs
         )
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(32.dp))
 
-        // ── 4. Shortcuts row (smaller circular icons — like Transport/Internet)
-        ShortcutsSection(
-            savedJobsCount       = uiState.savedJobsCount,
-            onOpenSavedJobs      = onOpenSavedJobs,
-            onOpenResumeLab      = onOpenResumeLab,
-            onOpenInterview      = onOpenInterview,
-            onOpenJobs           = onOpenJobs
+        // ── 4. Quick Stats & Shortcuts
+        QuickInsightsRow(
+            savedJobsCount = uiState.savedJobsCount,
+            onOpenSavedJobs = onOpenSavedJobs
         )
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(32.dp))
 
-        // ── 5. Metrics strip (2-column inline tiles)
-        MetricsStrip(
-            resumeScore     = uiState.latestResumeScore,
-            mockScore       = uiState.latestMockScore,
-            savedJobsCount  = uiState.savedJobsCount,
-            deadlinesCount  = uiState.upcomingDeadlines.size
-        )
-
-        Spacer(Modifier.height(28.dp))
-
-        // ── 6. Recent activity (transaction-list style)
+        // ── 5. Activity Timeline
         RecentActivitySection(
             activities      = uiState.recentActivity,
             onOpenJob       = onOpenJob,
@@ -303,24 +288,18 @@ private fun DashboardContent(
             onOpenInterview = onOpenInterview
         )
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(32.dp))
 
-        // ── 7. Upcoming deadlines
+        // ── 6. Deadlines
         if (uiState.upcomingDeadlines.isNotEmpty()) {
             DeadlinesSection(
                 deadlines  = uiState.upcomingDeadlines,
                 onOpenJob  = onOpenJob
             )
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(32.dp))
         }
 
-        // ── 8. Next steps (if suggestions exist)
-        if (uiState.nextStepSuggestions.isNotEmpty()) {
-            NextStepsSection(suggestions = uiState.nextStepSuggestions)
-            Spacer(Modifier.height(28.dp))
-        }
-
-        // ── Sign-out error notice
+        // Sign-out error notice
         uiState.signOutError?.let { error ->
             Box(modifier = Modifier.padding(horizontal = 20.dp)) {
                 ErrorNotice(message = error)
@@ -328,7 +307,6 @@ private fun DashboardContent(
             Spacer(Modifier.height(16.dp))
         }
 
-        // Bottom padding for nav bar
         Spacer(Modifier.height(96.dp))
     }
 }
@@ -441,333 +419,190 @@ private fun HeaderIconButton(icon: ImageVector, onClick: () -> Unit) {
     }
 }
 
-// ── 2. Readiness Hero Section ─────────────────────────────────────────
-// Like the large balance number in fintech apps
+// ── 2. Momentum Hub ───────────────────────────────────────────────────
 
 @Composable
-private fun ReadinessHeroSection(uiState: DashboardUiState) {
-    Column(
-        modifier            = Modifier
+private fun MomentumHub(uiState: DashboardUiState) {
+    Surface(
+        modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp),
-        horizontalAlignment = Alignment.Start
+        shape = RoundedCornerShape(32.dp),
+        color = SurfaceGray,
+        border = BorderStroke(1.dp, DividerGray)
     ) {
-        Text(
-            text  = "Current readiness",
-            style = MaterialTheme.typography.bodySmall,
-            color = SlateGray
-        )
-
-        Spacer(Modifier.height(6.dp))
-
-        // Large score number — like ₦674,981.65 in screenshot
-        val scoreInt     = uiState.readinessScore ?: 0
-        val scoreFraction = scoreInt % 10
-
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                text       = "$scoreInt",
-                style      = MaterialTheme.typography.displayLarge.copy(fontSize = 52.sp),
-                color      = InkBlack,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text       = ".$scoreFraction",
-                style      = MaterialTheme.typography.displayLarge.copy(fontSize = 30.sp),
-                color      = SlateGray,
-                modifier   = Modifier.padding(bottom = 6.dp)
-            )
-            Text(
-                text     = " / 100",
-                style    = MaterialTheme.typography.bodyMedium,
-                color    = SilverMist,
-                modifier = Modifier.padding(bottom = 10.dp, start = 4.dp)
-            )
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        // Progress bar (thin)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(4.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(SurfaceGray)
+        Column(
+            modifier = Modifier.padding(28.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            val progress = (scoreInt.coerceIn(0, 100) / 100f)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(progress)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(InkBlack)
-            )
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        Text(
-            text  = uiState.readinessSummary.take(80),
-            style = MaterialTheme.typography.bodySmall,
-            color = SlateGray,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-// ── 3. Primary Action Row ─────────────────────────────────────────────
-// Matches screenshot: "Top-up" (filled dark circle) + 3 outlined circles
-// First button is filled black (primary CTA), rest are outlined
-
-@Composable
-private fun PrimaryActionRow(
-    onOpenJobs: () -> Unit,
-    onOpenResumeLab: () -> Unit,
-    onOpenInterview: () -> Unit,
-    onSignOut: () -> Unit,
-    isSigningOut: Boolean
-) {
-    Row(
-        modifier              = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        // Primary action — filled dark circle (like "Top-up" in screenshot)
-        PrimaryCircleAction(
-            icon    = Icons.Outlined.Add,
-            label   = "Find Jobs",
-            filled  = true,
-            onClick = onOpenJobs
-        )
-        PrimaryCircleAction(
-            icon    = Icons.Outlined.Send,
-            label   = "Resume",
-            filled  = false,
-            onClick = onOpenResumeLab
-        )
-        PrimaryCircleAction(
-            icon    = Icons.Outlined.MicNone,
-            label   = "Interview",
-            filled  = false,
-            onClick = onOpenInterview
-        )
-        PrimaryCircleAction(
-            icon    = Icons.Outlined.MoreHoriz,
-            label   = "More",
-            filled  = false,
-            onClick = { /* Could open another menu if needed */ }
-        )
-    }
-}
-
-@Composable
-private fun PrimaryCircleAction(
-    icon: ImageVector,
-    label: String,
-    filled: Boolean,
-    onClick: () -> Unit
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(60.dp)
-                .clip(CircleShape)
-                .background(if (filled) InkBlack else CanvasWhite)
-                .then(
-                    if (!filled) Modifier.then(
-                        Modifier.background(SurfaceGray, CircleShape)
-                    ) else Modifier
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(InkBlack, CircleShape)
                 )
-                .clickable(
-                    indication        = null,
-                    interactionSource = remember { MutableInteractionSource() },
-                    onClick           = onClick
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector        = icon,
-                contentDescription = label,
-                tint               = if (filled) PureWhite else InkBlack,
-                modifier           = Modifier.size(24.dp)
-            )
-        }
+                Text(
+                    "PREPARATION MOMENTUM",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = SlateGray,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+            }
 
+            Text(
+                text = uiState.readinessSummary,
+                style = MaterialTheme.typography.headlineSmall,
+                color = InkBlack,
+                fontWeight = FontWeight.Bold,
+                lineHeight = 30.sp
+            )
+
+            HorizontalDivider(color = DividerGray.copy(alpha = 0.5f))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                ScoreIndicator(label = "Resume", score = uiState.latestResumeScore)
+                ScoreIndicator(label = "Interview", score = uiState.latestMockScore)
+                ScoreIndicator(label = "Job Goal", score = if (uiState.savedJobsCount > 0) 100 else null)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ScoreIndicator(label: String, score: Int?) {
+    Column {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = SlateGray)
         Text(
-            text      = label,
-            style     = MaterialTheme.typography.labelSmall,
-            color     = InkBlack,
-            fontWeight = FontWeight.Medium
+            text = score?.let { "$it%" } ?: "Pending",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = if (score != null) InkBlack else SilverMist
         )
     }
 }
 
-// ── 4. Shortcuts Section ──────────────────────────────────────────────
-// Matches screenshot: "Shortcuts" label + row of smaller outlined icons
+// ── 3. Toolbox Gallery ────────────────────────────────────────────────
 
 @Composable
-private fun ShortcutsSection(
-    savedJobsCount: Int,
-    onOpenSavedJobs: () -> Unit,
-    onOpenResumeLab: () -> Unit,
+private fun ToolboxGallery(
     onOpenInterview: () -> Unit,
+    onOpenResumeLab: () -> Unit,
     onOpenJobs: () -> Unit
 ) {
     Column(
-        modifier            = Modifier
-            .fillMaxWidth()
-            .background(SurfaceGray)
-            .padding(vertical = 20.dp),
+        modifier = Modifier.padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Row(
-            modifier              = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment     = Alignment.CenterVertically
-        ) {
-            Text(
-                text       = "Shortcuts",
-                style      = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color      = InkBlack
-            )
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            ShortcutItem(
-                icon    = Icons.Outlined.BusinessCenter,
-                label   = "Browse",
-                onClick = onOpenJobs
-            )
-            ShortcutItem(
-                icon    = Icons.Outlined.BookmarkBorder,
-                label   = "Saved (${savedJobsCount})",
-                onClick = onOpenSavedJobs
-            )
-            ShortcutItem(
-                icon    = Icons.Outlined.Description,
-                label   = "Resume",
-                onClick = onOpenResumeLab
-            )
-            ShortcutItem(
-                icon    = Icons.Outlined.RecordVoiceOver,
-                label   = "Interview",
-                onClick = onOpenInterview
-            )
-            ShortcutItem(
-                icon    = Icons.Outlined.Analytics,
-                label   = "Analyze",
-                onClick = onOpenJobs
-            )
-        }
-    }
-}
-
-@Composable
-private fun ShortcutItem(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(52.dp)
-                .clip(CircleShape)
-                .background(PureWhite)
-                .clickable(
-                    indication        = null,
-                    interactionSource = remember { MutableInteractionSource() },
-                    onClick           = onClick
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector        = icon,
-                contentDescription = label,
-                tint               = InkBlack,
-                modifier           = Modifier.size(22.dp)
-            )
-        }
-
         Text(
-            text  = label.take(10),
+            "SIMULATION WORKSTATION",
             style = MaterialTheme.typography.labelSmall,
             color = SlateGray,
-            maxLines = 1
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.5.sp
         )
+
+        Row(
+            modifier = Modifier.fillMaxWidth().height(180.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            ToolCard(
+                modifier = Modifier.weight(1f),
+                title = "Interview\nLab",
+                description = "Custom behavioral & technical mocks.",
+                icon = Icons.Outlined.MicNone,
+                onClick = onOpenInterview
+            )
+            ToolCard(
+                modifier = Modifier.weight(1f),
+                title = "Resume\nRoast",
+                description = "JD-specific score & experience audit.",
+                icon = Icons.Outlined.Description,
+                onClick = onOpenResumeLab
+            )
+        }
     }
 }
 
-// ── 5. Metrics Strip ──────────────────────────────────────────────────
-// 2x2 grid of compact metric tiles (monochrome)
+@Composable
+private fun ToolCard(
+    modifier: Modifier = Modifier,
+    title: String,
+    description: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        shape = RoundedCornerShape(24.dp),
+        color = InkBlack,
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(PureWhite.copy(alpha = 0.1f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, tint = PureWhite, modifier = Modifier.size(20.dp))
+            }
+            
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(title, color = PureWhite, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(description, color = PureWhite.copy(alpha = 0.6f), style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
+}
+
+// ── 4. Quick Insights Row ─────────────────────────────────────────────
 
 @Composable
-private fun MetricsStrip(
-    resumeScore: Int?,
-    mockScore: Int?,
+private fun QuickInsightsRow(
     savedJobsCount: Int,
-    deadlinesCount: Int
+    onOpenSavedJobs: () -> Unit
 ) {
-    Column(
-        modifier            = Modifier.padding(horizontal = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            text       = "Your metrics",
-            style      = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color      = InkBlack
-        )
-
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            MetricTile(
-                modifier = Modifier.weight(1f),
-                label    = "Resume",
-                value    = resumeScore?.toString() ?: "--",
-                detail   = if (resumeScore == null) "No roast yet" else "Latest score",
-                positive = resumeScore?.let { it >= 70 }
-            )
-            MetricTile(
-                modifier = Modifier.weight(1f),
-                label    = "Interview",
-                value    = mockScore?.toString() ?: "--",
-                detail   = if (mockScore == null) "No session yet" else "Latest score",
-                positive = mockScore?.let { it >= 70 }
-            )
+        Surface(
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(24.dp),
+            color = SurfaceGray,
+            onClick = onOpenSavedJobs
+        ) {
+            Row(
+                modifier = Modifier.padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Icon(Icons.Outlined.BookmarkBorder, null, tint = InkBlack)
+                Column {
+                    Text("$savedJobsCount Saved", fontWeight = FontWeight.Bold, color = InkBlack)
+                    Text("Targeting roles", style = MaterialTheme.typography.labelSmall, color = SlateGray)
+                }
+            }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            MetricTile(
-                modifier = Modifier.weight(1f),
-                label    = "Saved Jobs",
-                value    = savedJobsCount.toString(),
-                detail   = if (savedJobsCount == 0) "Empty shortlist" else "Roles tracked",
-                positive = savedJobsCount > 0
-            )
-            MetricTile(
-                modifier = Modifier.weight(1f),
-                label    = "Deadlines",
-                value    = deadlinesCount.toString(),
-                detail   = if (deadlinesCount == 0) "None watching" else "Upcoming",
-                positive = null
-            )
+        
+        Surface(
+            modifier = Modifier.size(64.dp),
+            shape = RoundedCornerShape(24.dp),
+            color = SurfaceGray,
+            onClick = { /* Could be Settings or Stats */ }
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(Icons.Outlined.GridView, null, tint = InkBlack)
+            }
         }
     }
 }
