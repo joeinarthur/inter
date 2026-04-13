@@ -67,7 +67,7 @@ import com.internshipuncle.core.ui.PlaceholderScreen
 import com.internshipuncle.data.repository.JobsRepository
 import com.internshipuncle.data.repository.ResumeRepository
 import com.internshipuncle.domain.model.JobDetail
-import com.internshipuncle.domain.model.JobSummary
+import com.internshipuncle.domain.model.JobCard
 import com.internshipuncle.domain.model.ResumeSummary
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -94,7 +94,7 @@ data class AnalysisUiState(
     val selectedResumeId: String? = null,
     
     // Select Job State
-    val savedJobs: List<JobSummary> = emptyList(),
+    val savedJobs: List<JobCard> = emptyList(),
     val selectedJobId: String? = null,
     
     // Paste JD State
@@ -108,7 +108,7 @@ data class AnalysisUiState(
     val selectedResume: ResumeSummary?
         get() = resumes.find { it.id == selectedResumeId }
         
-    val selectedJob: JobSummary?
+    val selectedJob: JobCard?
         get() = savedJobs.find { it.id == selectedJobId }
 }
 
@@ -391,7 +391,7 @@ private fun InputSelectionSection(
                         ) {
                             uiState.savedJobs.forEach { job ->
                                 DropdownMenuItem(
-                                    text = { Text(job.title) },
+                                    text = { Text(job.title ?: "Untitled Job") },
                                     onClick = { 
                                         onJobSelected(job.id)
                                         expanded = false 
@@ -461,8 +461,9 @@ private fun ResumeSelectionSection(
                 modifier = Modifier.background(PureWhite)
             ) {
                 uiState.resumes.forEach { resume ->
+                    val fileName = resume.fileName ?: "Untitled Resume"
                     DropdownMenuItem(
-                        text = { Text(resume.fileName) },
+                        text = { Text(fileName) },
                         onClick = { 
                             onResumeSelected(resume.id)
                             expanded = false 
