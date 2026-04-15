@@ -11,6 +11,7 @@ Recommended stack:
 - Room
 - Retrofit or Ktor client
 - Supabase integration for auth/storage/data
+  
 
 ## 2. Android Architecture Goals
 
