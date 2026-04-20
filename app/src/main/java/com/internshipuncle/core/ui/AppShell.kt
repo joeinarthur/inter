@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -23,6 +24,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -35,25 +38,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.internshipuncle.R
 import com.internshipuncle.core.design.CanvasWhite
 import com.internshipuncle.core.design.CharcoalDark
 import com.internshipuncle.core.design.DividerGray
+import com.internshipuncle.core.design.ErrorRed
 import com.internshipuncle.core.design.InkBlack
 import com.internshipuncle.core.design.InternshipUncleTheme
-import com.internshipuncle.core.design.NavPillDark
 import com.internshipuncle.core.design.NavIconWhite
 import com.internshipuncle.core.design.NavSelectedBg
 import com.internshipuncle.core.design.PureWhite
 import com.internshipuncle.core.design.SlateGray
 import com.internshipuncle.core.design.SurfaceGray
-import com.internshipuncle.core.design.ErrorRed
 
 data class TopLevelDestination(
     val label: String,
@@ -61,12 +64,10 @@ data class TopLevelDestination(
     val icon: ImageVector? = null
 )
 
-// ── App Shell ─────────────────────────────────────────────────────────
-// Pure white canvas + dark floating pill nav bar (fintech style)
-
 @Composable
 fun AppShell(
     title: String,
+    showTopBar: Boolean,
     showBottomBar: Boolean,
     destinations: List<TopLevelDestination>,
     selectedRoute: String?,
@@ -76,18 +77,18 @@ fun AppShell(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(CanvasWhite)   // Flat pure white — no gradients
+            .background(CanvasWhite)
     ) {
         Scaffold(
-            modifier       = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             containerColor = Color.Transparent,
-            contentColor   = MaterialTheme.colorScheme.onBackground,
-            topBar = {},
+            contentColor = MaterialTheme.colorScheme.onBackground,
+            topBar = { if (showTopBar) AppTopBar() },
             bottomBar = {
                 if (showBottomBar) {
                     AppBottomBar(
-                        destinations         = destinations,
-                        selectedRoute        = selectedRoute,
+                        destinations = destinations,
+                        selectedRoute = selectedRoute,
                         onDestinationSelected = onDestinationSelected
                     )
                 }
@@ -97,9 +98,58 @@ fun AppShell(
     }
 }
 
-// ── Dark Floating Pill Nav Bar ─────────────────────────────────────────
-// Dark (#1C1C1E) capsule, floating above the white canvas.
-// Selected tab = white filled circle; unselected = white icon, no bg.
+@Composable
+private fun AppTopBar() {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = PureWhite,
+        shadowElevation = 4.dp,
+        tonalElevation = 0.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.favicon_removebg_preview),
+                    contentDescription = "Internship Uncle logo",
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                )
+                Text(
+                    text = "INTERNSHIP UNCLE",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = InkBlack,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = (-0.3).sp
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFF0F3F8)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.PersonOutline,
+                    contentDescription = "Profile",
+                    tint = CharcoalDark,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+        }
+    }
+}
 
 @Composable
 private fun AppBottomBar(
@@ -110,29 +160,30 @@ private fun AppBottomBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 28.dp, vertical = 16.dp)
+            .padding(horizontal = 14.dp, vertical = 10.dp)
             .windowInsetsPadding(WindowInsets.navigationBars),
         contentAlignment = Alignment.BottomCenter
     ) {
         Surface(
-            shape          = RoundedCornerShape(40.dp),
-            color          = NavPillDark,
-            shadowElevation = 20.dp,
+            shape = RoundedCornerShape(28.dp),
+            color = PureWhite,
+            shadowElevation = 12.dp,
             tonalElevation = 0.dp
         ) {
             Row(
                 modifier = Modifier
-                    .padding(horizontal = 20.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment     = Alignment.CenterVertically
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 destinations.forEach { destination ->
                     val isSelected = destination.route == selectedRoute
                     AppNavItem(
-                        icon       = destination.icon,
-                        label      = destination.label,
+                        icon = destination.icon,
+                        label = destination.label,
                         isSelected = isSelected,
-                        onClick    = { onDestinationSelected(destination.route) }
+                        onClick = { onDestinationSelected(destination.route) }
                     )
                 }
             }
@@ -148,46 +199,58 @@ private fun AppNavItem(
     onClick: () -> Unit
 ) {
     val bgColor by animateColorAsState(
-        targetValue   = if (isSelected) NavSelectedBg else Color.Transparent,
+        targetValue = if (isSelected) NavSelectedBg else Color.Transparent,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label         = "navBg"
+        label = "navBg"
     )
     val iconTint by animateColorAsState(
-        targetValue   = if (isSelected) NavPillDark else NavIconWhite.copy(alpha = 0.7f),
+        targetValue = if (isSelected) ErrorRed else NavIconWhite,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label         = "navTint"
+        label = "navTint"
     )
     val scale by animateFloatAsState(
-        targetValue   = if (isSelected) 1.08f else 1f,
+        targetValue = if (isSelected) 1.04f else 1f,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label         = "navScale"
+        label = "navScale"
     )
 
-    Box(
+    Column(
         modifier = Modifier
             .scale(scale)
-            .size(48.dp)
-            .clip(CircleShape)
             .clickable(
-                indication       = null,
+                indication = null,
                 interactionSource = remember { MutableInteractionSource() },
-                onClick          = onClick
-            )
-            .background(bgColor, CircleShape),
-        contentAlignment = Alignment.Center
+                onClick = onClick
+            ),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        if (icon != null) {
-            Icon(
-                imageVector    = icon,
-                contentDescription = label,
-                modifier       = Modifier.size(22.dp),
-                tint           = iconTint
-            )
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(bgColor, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    modifier = Modifier.size(22.dp),
+                    tint = iconTint
+                )
+            }
         }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (isSelected) ErrorRed else SlateGray,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
-
-// ── Shared UI Components ──────────────────────────────────────────────
 
 @Composable
 fun PlaceholderScreen(
@@ -204,63 +267,61 @@ fun PlaceholderScreen(
             .background(CanvasWhite)
             .padding(
                 horizontal = InternshipUncleTheme.spacing.medium,
-                vertical   = InternshipUncleTheme.spacing.large
+                vertical = InternshipUncleTheme.spacing.large
             ),
         verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.medium)
     ) {
-        // ── Hero card
         Surface(
-            modifier       = Modifier.fillMaxWidth(),
-            shape          = RoundedCornerShape(20.dp),
-            color          = SurfaceGray,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            color = SurfaceGray,
             shadowElevation = 0.dp
         ) {
             Column(
-                modifier            = Modifier.padding(24.dp),
+                modifier = Modifier.padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text  = eyebrow.uppercase(),
+                    text = eyebrow.uppercase(),
                     style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.sp),
                     color = SlateGray,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text  = title,
+                    text = title,
                     style = MaterialTheme.typography.headlineLarge,
                     color = InkBlack
                 )
                 Text(
-                    text  = description,
+                    text = description,
                     style = MaterialTheme.typography.bodyMedium,
                     color = SlateGray
                 )
             }
         }
 
-        // ── Section cards
         if (sections.isNotEmpty()) {
             sections.forEach { (sectionTitle, sectionBody) ->
                 Surface(
-                    modifier       = Modifier.fillMaxWidth(),
-                    shape          = RoundedCornerShape(16.dp),
-                    color          = SurfaceGray,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = SurfaceGray,
                     shadowElevation = 0.dp
                 ) {
                     Column(
-                        modifier            = Modifier.padding(20.dp),
+                        modifier = Modifier.padding(20.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
-                            text  = sectionTitle,
+                            text = sectionTitle,
                             style = MaterialTheme.typography.titleMedium,
                             color = InkBlack,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text     = sectionBody,
-                            style    = MaterialTheme.typography.bodyMedium,
-                            color    = SlateGray,
+                            text = sectionBody,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = SlateGray,
                             overflow = TextOverflow.Clip
                         )
                     }

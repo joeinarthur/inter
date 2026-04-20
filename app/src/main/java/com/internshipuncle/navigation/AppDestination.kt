@@ -6,9 +6,11 @@ sealed class AppDestination(val route: String) {
     data object Signup : AppDestination("signup")
     data object Onboarding : AppDestination("onboarding")
     data object Jobs : AppDestination("jobs")
-    data object Analyze : AppDestination("analyze?targetJobId={targetJobId}") {
-        fun createRoute(targetJobId: String? = null): String {
-            return targetJobId?.let { "analyze?targetJobId=$it" } ?: "analyze"
+    data object Analyze : AppDestination("more")
+
+    data object ResumeMatcher : AppDestination("resume-matcher?targetJobId={targetJobId}&startMode={startMode}") {
+        fun createRoute(targetJobId: String? = null, startMode: String? = null): String {
+            return "resume-matcher?targetJobId=${targetJobId ?: ""}&startMode=${startMode ?: ""}"
         }
     }
     data object SavedJobs : AppDestination("jobs/saved")
@@ -43,6 +45,12 @@ sealed class AppDestination(val route: String) {
             return targetJobId?.let { "interview/mock?targetJobId=$it" } ?: "interview/mock"
         }
     }
+
+    data object CommunityFeed : AppDestination("more/community")
+    data object RealityCheck : AppDestination("more/reality")
+    data object Progress : AppDestination("more/progress")
+    data object Referrals : AppDestination("more/referrals")
+    data object Profile : AppDestination("profile")
     data object MockInterviewSession : AppDestination("interview/mock/session/{sessionId}") {
         fun createRoute(sessionId: String): String = "interview/mock/session/$sessionId"
     }

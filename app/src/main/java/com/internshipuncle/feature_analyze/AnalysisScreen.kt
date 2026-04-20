@@ -122,11 +122,15 @@ class AnalysisViewModel @Inject constructor(
     private val jobsRepository: JobsRepository,
     private val resumeRepository: ResumeRepository
 ) : ViewModel() {
-    private val initialTargetJobId: String? = savedStateHandle["targetJobId"]
+    private val initialTargetJobId: String? = savedStateHandle.get<String>("targetJobId")?.takeIf { it.isNotBlank() }
+    private val initialStartMode: String? = savedStateHandle.get<String>("startMode")?.takeIf { it.isNotBlank() }
 
     private val _uiState = MutableStateFlow(
         AnalysisUiState(
-            inputMode = if (initialTargetJobId != null) JobInputMode.SELECT_SAVED else JobInputMode.PASTE_JD,
+            inputMode = when (initialStartMode) {
+                "paste" -> JobInputMode.PASTE_JD
+                else -> if (initialTargetJobId != null) JobInputMode.SELECT_SAVED else JobInputMode.PASTE_JD
+            },
             selectedJobId = initialTargetJobId
         )
     )
