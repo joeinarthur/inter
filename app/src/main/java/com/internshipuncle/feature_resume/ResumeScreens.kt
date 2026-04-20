@@ -69,6 +69,7 @@ import com.internshipuncle.core.design.CoolGray
 import com.internshipuncle.core.design.CharcoalDark
 import com.internshipuncle.core.design.InternshipUncleTheme
 import com.internshipuncle.core.design.PureWhite
+import com.internshipuncle.core.design.RedNegative
 import com.internshipuncle.core.design.InkBlack
 import com.internshipuncle.core.design.SurfaceLight
 import com.internshipuncle.core.model.QueryResult
@@ -621,9 +622,9 @@ private fun PillButton(
         modifier = modifier.height(52.dp),
         shape = RoundedCornerShape(26.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = InkBlack,
+            containerColor = RedNegative,
             contentColor = PureWhite,
-            disabledContainerColor = InkBlack.copy(alpha = 0.4f),
+            disabledContainerColor = RedNegative.copy(alpha = 0.4f),
             disabledContentColor = SurfaceGray
         )
     ) {

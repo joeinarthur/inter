@@ -40,6 +40,7 @@ import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.WorkOutline
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -74,6 +75,7 @@ import com.internshipuncle.core.design.GreenPositive
 import com.internshipuncle.core.design.InkBlack
 import com.internshipuncle.core.design.InternshipUncleTheme
 import com.internshipuncle.core.design.PureWhite
+import com.internshipuncle.core.design.RedNegative
 import com.internshipuncle.core.design.RedNegative
 import com.internshipuncle.core.design.SilverMist
 import com.internshipuncle.core.design.SlateGray
@@ -260,7 +262,7 @@ private fun DashboardContent(
         Spacer(Modifier.height(20.dp))
 
         // ── 2. Momentum Hub (Hero Card)
-        MomentumHub(uiState = uiState)
+        MomentumHub(uiState = uiState, onOpenInterview = onOpenInterview)
 
         Spacer(Modifier.height(32.dp))
 
@@ -423,51 +425,61 @@ private fun HeaderIconButton(icon: ImageVector, onClick: () -> Unit) {
 // ── 2. Momentum Hub ───────────────────────────────────────────────────
 
 @Composable
-private fun MomentumHub(uiState: DashboardUiState) {
+private fun MomentumHub(uiState: DashboardUiState, onOpenInterview: () -> Unit) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp),
-        shape = RoundedCornerShape(32.dp),
-        color = SurfaceGray,
-        border = BorderStroke(1.dp, DividerGray)
+        shape = RoundedCornerShape(24.dp),
+        color = InkBlack,
+        shadowElevation = 4.dp
     ) {
         Column(
-            modifier = Modifier.padding(28.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(InkBlack, CircleShape)
-                )
-                Text(
-                    "PREPARATION MOMENTUM",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = SlateGray,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
-            }
-
-            Text(
-                text = uiState.readinessSummary,
-                style = MaterialTheme.typography.headlineSmall,
-                color = InkBlack,
-                fontWeight = FontWeight.Bold,
-                lineHeight = 30.sp
-            )
-
-            HorizontalDivider(color = DividerGray.copy(alpha = 0.5f))
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
             ) {
-                ScoreIndicator(label = "Resume", score = uiState.latestResumeScore)
-                ScoreIndicator(label = "Interview", score = uiState.latestMockScore)
-                ScoreIndicator(label = "Job Goal", score = if (uiState.savedJobsCount > 0) 100 else null)
+                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Text(
+                        "Good to see you, \nUncle.",
+                        style = MaterialTheme.typography.displaySmall.copy(fontSize = 28.sp),
+                        color = PureWhite,
+                        fontWeight = FontWeight.ExtraBold,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Uncle has been waiting.\nLet's see what you've been\nworking on.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = PureWhite.copy(alpha = 0.8f)
+                    )
+                }
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(id = com.internshipuncle.R.drawable.favicon_removebg_preview),
+                    contentDescription = "Uncle Logo",
+                    modifier = Modifier.size(80.dp).clip(CircleShape).background(Color.White)
+                )
+            }
+            
+            Button(
+                onClick = onOpenInterview,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = RedNegative,
+                    contentColor = PureWhite
+                )
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Outlined.MicNone, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Text("UNCLE WILL GRILL YOU NOW", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                }
             }
         }
     }
@@ -1023,7 +1035,7 @@ private fun FintechPillButton(
         modifier = modifier
             .height(50.dp)
             .clip(RoundedCornerShape(25.dp))
-            .background(InkBlack)
+            .background(RedNegative)
             .clickable(
                 indication        = null,
                 interactionSource = remember { MutableInteractionSource() },

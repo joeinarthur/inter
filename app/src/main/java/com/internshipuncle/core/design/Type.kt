@@ -9,8 +9,19 @@ import androidx.compose.ui.unit.sp
 // Strong, compact hierarchy that matches the screenshots:
 // big navy headlines, punchy red accents, and clean readable body copy.
 
-private val DisplayFamily = FontFamily.SansSerif
-private val TextFamily = FontFamily.SansSerif
+import androidx.compose.ui.text.font.Font
+import com.internshipuncle.R
+
+private val PoppinsFamily = FontFamily(
+    Font(R.font.poppins_regular, FontWeight.Normal),
+    Font(R.font.poppins_medium, FontWeight.Medium),
+    Font(R.font.poppins_semibold, FontWeight.SemiBold),
+    Font(R.font.poppins_bold, FontWeight.Bold),
+    Font(R.font.poppins_extrabold, FontWeight.ExtraBold)
+)
+
+private val DisplayFamily = PoppinsFamily
+private val TextFamily = PoppinsFamily
 
 val InternshipUncleTypography = Typography(
     displayLarge = TextStyle(
