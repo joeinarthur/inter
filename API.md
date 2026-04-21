@@ -3,7 +3,7 @@
 ## 1. API Philosophy
 
 The backend should provide stable, structured contracts for all important AI workflows.
-
+ 
 Rules:
 - the Android app should not call AI providers directly
 - every AI-heavy feature should go through a secure backend function
