@@ -1,8 +1,13 @@
 package com.internshipuncle.feature_auth
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,6 +19,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -119,7 +127,8 @@ data class OnboardingUiState(
     val college: String = "",
     val degree: String = "",
     val graduationYear: String = "",
-    val targetRolesInput: String = "",
+    val selectedRoles: Set<String> = emptySet(),
+    val customRoleInput: String = "",
     val isSubmitting: Boolean = false,
     val isSigningOut: Boolean = false,
     val errorMessage: String? = null,
@@ -129,7 +138,7 @@ data class OnboardingUiState(
     val existingEmail: String? = null
 ) {
     val targetRoles: List<String>
-        get() = parseTargetRoles(targetRolesInput)
+        get() = (selectedRoles + parseTargetRoles(customRoleInput)).toList()
 
     val nameError: String?
         get() = if (name.isBlank()) "Name is required." else null
@@ -345,7 +354,7 @@ class OnboardingViewModel @Inject constructor(
                             college = profile?.college.orEmpty(),
                             degree = profile?.degree.orEmpty(),
                             graduationYear = profile?.graduationYear?.toString().orEmpty(),
-                            targetRolesInput = profile?.targetRoles?.joinToString(", ").orEmpty()
+                            selectedRoles = profile?.targetRoles?.toSet().orEmpty()
                         )
                     } else {
                         baseState
@@ -354,6 +363,12 @@ class OnboardingViewModel @Inject constructor(
             }
         }
     }
+
+    val popularRoles = listOf(
+        "Software Engineer", "Frontend Developer", "Backend Developer",
+        "Product Manager", "Data Analyst", "UI/UX Designer",
+        "Mobile Developer", "Cloud Architect", "Security Analyst"
+    )
 
     val uiState: StateFlow<OnboardingUiState> = state.asStateFlow()
 
@@ -380,7 +395,18 @@ class OnboardingViewModel @Inject constructor(
     }
 
     fun onTargetRolesChanged(value: String) {
-        state.update { it.copy(targetRolesInput = value, errorMessage = null, infoMessage = null) }
+        state.update { it.copy(customRoleInput = value, errorMessage = null, infoMessage = null) }
+    }
+
+    fun toggleRole(role: String) {
+        state.update { current ->
+            val newSelected = if (role in current.selectedRoles) {
+                current.selectedRoles - role
+            } else {
+                current.selectedRoles + role
+            }
+            current.copy(selectedRoles = newSelected, errorMessage = null)
+        }
     }
 
     fun submit() {
@@ -584,54 +610,105 @@ fun OnboardingScreen(
             message = uiState.errorMessage ?: uiState.infoMessage,
             isError = uiState.errorMessage != null
         )
-        uiState.existingEmail?.takeIf(String::isNotBlank)?.let { email ->
-            ReadOnlyProfileRow(
-                label = "Account email",
-                value = email
+        
+        // Profile Grid
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            AppTextField(
+                value = uiState.name,
+                onValueChange = viewModel::onNameChanged,
+                label = "Full Name",
+                enabled = !uiState.isSubmitting && !uiState.isSigningOut,
+                isError = uiState.name.isNotEmpty() && uiState.nameError != null,
+                supportingText = uiState.nameError
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(modifier = Modifier.weight(1.5f)) {
+                    AppTextField(
+                        value = uiState.college,
+                        onValueChange = viewModel::onCollegeChanged,
+                        label = "College/University",
+                        enabled = !uiState.isSubmitting && !uiState.isSigningOut,
+                        isError = uiState.college.isNotEmpty() && uiState.collegeError != null,
+                        supportingText = uiState.collegeError
+                    )
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    AppTextField(
+                        value = uiState.graduationYear,
+                        onValueChange = viewModel::onGraduationYearChanged,
+                        label = "Class of",
+                        enabled = !uiState.isSubmitting && !uiState.isSigningOut,
+                        isError = uiState.graduationYear.isNotEmpty() && uiState.graduationYearError != null,
+                        supportingText = uiState.graduationYearError,
+                        keyboardType = KeyboardType.Number
+                    )
+                }
+            }
+
+            AppTextField(
+                value = uiState.degree,
+                onValueChange = viewModel::onDegreeChanged,
+                label = "Degree / Specialization",
+                enabled = !uiState.isSubmitting && !uiState.isSigningOut,
+                isError = uiState.degree.isNotEmpty() && uiState.degreeError != null,
+                supportingText = uiState.degreeError
             )
         }
-        AppTextField(
-            value = uiState.name,
-            onValueChange = viewModel::onNameChanged,
-            label = "Name",
-            enabled = !uiState.isSubmitting && !uiState.isSigningOut,
-            isError = uiState.name.isNotEmpty() && uiState.nameError != null,
-            supportingText = uiState.nameError
-        )
-        AppTextField(
-            value = uiState.college,
-            onValueChange = viewModel::onCollegeChanged,
-            label = "College",
-            enabled = !uiState.isSubmitting && !uiState.isSigningOut,
-            isError = uiState.college.isNotEmpty() && uiState.collegeError != null,
-            supportingText = uiState.collegeError
-        )
-        AppTextField(
-            value = uiState.degree,
-            onValueChange = viewModel::onDegreeChanged,
-            label = "Degree",
-            enabled = !uiState.isSubmitting && !uiState.isSigningOut,
-            isError = uiState.degree.isNotEmpty() && uiState.degreeError != null,
-            supportingText = uiState.degreeError
-        )
-        AppTextField(
-            value = uiState.graduationYear,
-            onValueChange = viewModel::onGraduationYearChanged,
-            label = "Graduation year",
-            enabled = !uiState.isSubmitting && !uiState.isSigningOut,
-            isError = uiState.graduationYear.isNotEmpty() && uiState.graduationYearError != null,
-            supportingText = uiState.graduationYearError,
-            keyboardType = KeyboardType.Number
-        )
-        AppTextField(
-            value = uiState.targetRolesInput,
-            onValueChange = viewModel::onTargetRolesChanged,
-            label = "Target roles",
-            enabled = !uiState.isSubmitting && !uiState.isSigningOut,
-            isError = uiState.targetRolesInput.isNotEmpty() && uiState.targetRolesError != null,
-            supportingText = uiState.targetRolesError ?: "Separate multiple roles with commas.",
-            singleLine = false
-        )
+
+        Spacer(Modifier.height(8.dp))
+        HorizontalDivider(color = DividerGray)
+        Spacer(Modifier.height(8.dp))
+
+        // Role Selection
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                "Pick your target roles",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            
+            @OptIn(ExperimentalLayoutApi::class)
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                viewModel.popularRoles.forEach { role ->
+                    val isSelected = role in uiState.selectedRoles
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { viewModel.toggleRole(role) },
+                        label = { Text(role) },
+                        shape = RoundedCornerShape(20.dp),
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = InkBlack,
+                            selectedLabelColor = PureWhite,
+                            containerColor = SurfaceGray,
+                            labelColor = SlateGray
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = isSelected,
+                            borderColor = if (isSelected) InkBlack else DividerGray,
+                            selectedBorderColor = InkBlack
+                        )
+                    )
+                }
+            }
+
+            AppTextField(
+                value = uiState.customRoleInput,
+                onValueChange = viewModel::onTargetRolesChanged,
+                label = "Other roles (comma separated)",
+                enabled = !uiState.isSubmitting && !uiState.isSigningOut,
+                isError = uiState.customRoleInput.isNotEmpty() && uiState.targetRolesError != null,
+                supportingText = uiState.targetRolesError
+            )
+        }
+
+        Spacer(Modifier.height(16.dp))
+
         PillButton(
             onClick = viewModel::submit,
             enabled = uiState.canSubmit,

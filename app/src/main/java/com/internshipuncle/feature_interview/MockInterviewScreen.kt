@@ -6,34 +6,40 @@ import com.internshipuncle.core.design.SilverMist
 import com.internshipuncle.core.design.SlateGray
 import com.internshipuncle.core.design.CanvasWhite
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,13 +55,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.internshipuncle.core.design.CoolGray
-import com.internshipuncle.core.design.CharcoalDark
 import com.internshipuncle.core.design.InternshipUncleTheme
 import com.internshipuncle.core.design.PureWhite
 import com.internshipuncle.core.design.InkBlack
+import com.internshipuncle.core.design.CharcoalDark
 import com.internshipuncle.core.design.SurfaceLight
-import com.internshipuncle.core.model.QueryResult
 import com.internshipuncle.core.ui.PlaceholderScreen
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.LinearProgressIndicator
+import com.internshipuncle.core.model.QueryResult
 import com.internshipuncle.data.repository.InterviewRepository
 import com.internshipuncle.data.repository.JobsRepository
 import com.internshipuncle.data.repository.ResumeRepository
@@ -256,25 +264,25 @@ class MockInterviewSetupViewModel @Inject constructor(
         initialValue = MockInterviewSetupUiState()
     )
 
-    fun onRoleChange(value: String) {
+    fun onRoleNameChanged(value: String) {
         operationState.update { it.copy(roleName = value, errorMessage = null, infoMessage = null) }
     }
 
-    fun onDifficultyChange(value: String) {
+    fun onDifficultyChanged(value: String) {
         if (value !in DifficultyOptions) return
         operationState.update { it.copy(difficulty = value, errorMessage = null, infoMessage = null) }
     }
 
-    fun onModeChange(value: String) {
+    fun onModeChanged(value: String) {
         if (value !in ModeOptions) return
         operationState.update { it.copy(mode = value, errorMessage = null, infoMessage = null) }
     }
 
-    fun onIncludeResumeChange(value: Boolean) {
+    fun onIncludeResumeChanged(value: Boolean) {
         operationState.update { it.copy(includeResume = value, errorMessage = null, infoMessage = null) }
     }
 
-    fun onTargetJobSelected(job: JobCard?) {
+    fun onJobSelected(job: JobCard?) {
         operationState.update { state ->
             state.copy(
                 selectedTargetJobId = job?.id,
@@ -288,16 +296,11 @@ class MockInterviewSetupViewModel @Inject constructor(
         }
     }
 
-    fun clearCreatedSession() {
+    fun onSessionHandled() {
         operationState.update { it.copy(createdSessionId = null) }
     }
 
-    fun retryBackend() {
-        operationState.update { it.copy(errorMessage = null, infoMessage = null) }
-        interviewRepository.refresh()
-    }
-
-    fun createSession() {
+    fun initializeSimulation() {
         val current = uiState.value
         val role = current.roleName.trim()
 
@@ -591,6 +594,25 @@ private fun OutlinedPillButton(
     }
 }
 
+@Composable
+private fun AppTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    enabled: Boolean = true,
+    isError: Boolean = false
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        modifier = Modifier.fillMaxWidth(),
+        enabled = enabled,
+        isError = isError,
+        singleLine = true
+    )
+}
+
 // ── Screens ────────────────────────────────────────────────────────
 
 @Composable
@@ -599,186 +621,238 @@ fun MockInterviewSetupScreen(
     onOpenSession: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val selectedTargetJobTitle = uiState.selectedTargetJobTitle
-
-    LaunchedEffect(selectedTargetJobTitle) {
-        if (uiState.roleName.isBlank() && selectedTargetJobTitle != null) {
-            viewModel.onRoleChange(selectedTargetJobTitle)
-        }
-    }
 
     LaunchedEffect(uiState.createdSessionId) {
-        uiState.createdSessionId?.let { sessionId ->
-            onOpenSession(sessionId)
-            viewModel.clearCreatedSession()
+        uiState.createdSessionId?.let { id ->
+            onOpenSession(id)
+            viewModel.onSessionHandled()
         }
     }
 
-    when {
-        uiState.isLoading -> MockInterviewStateScreen(
-            title = "Loading prep lab",
-            description = "Pulling your shortlist, resume context, and history.",
-            showProgress = true
-        )
-        else -> Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = InternshipUncleTheme.spacing.medium)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.medium)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Hero Header
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                "PREP LAB",
+                style = MaterialTheme.typography.labelMedium,
+                color = SlateGray,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                "Custom Simulation",
+                style = MaterialTheme.typography.displaySmall,
+                color = InkBlack,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(28.dp),
+            color = SurfaceGray,
+            border = BorderStroke(1.dp, DividerGray)
         ) {
             Column(
-                modifier = Modifier.padding(top = InternshipUncleTheme.spacing.large),
-                verticalArrangement = Arrangement.spacedBy(InternshipUncleTheme.spacing.medium)
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                Text(
-                    text = "MOCK INTERVIEW",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = SlateGray,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = "Practice lab",
-                    style = MaterialTheme.typography.displaySmall,
-                    color = InkBlack,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Simulate realistic interview scenarios based on the roles you target.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = SlateGray
-                )
-            }
-
-            uiState.errorMessage?.let { message ->
-                InterviewNoticeCard(
-                    title = "Setup error",
-                    body = message,
-                    accent = MaterialTheme.colorScheme.error,
-                    isDark = false
-                )
-            }
-
-            uiState.infoMessage?.let { message ->
-                InterviewNoticeCard(
-                    title = "Generating...",
-                    body = message,
-                    accent = InkBlack,
-                    isDark = true
-                )
-            }
-
-            SetupCard(
-                title = "Target Context",
-                body = "What are we aiming for? If you selected a target job, we'll anchor around it."
-            ) {
-                OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth(),
-                    value = uiState.roleName,
-                    onValueChange = viewModel::onRoleChange,
-                    label = { Text("Target role") },
-                    singleLine = true
-                )
-                if (selectedTargetJobTitle != null) {
-                    SelectedJobCard(
-                        title = selectedTargetJobTitle,
-                        company = uiState.selectedTargetJobCompany
+                // Section 1: Target Role & Context
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Target Focus", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    
+                    AppTextField(
+                        value = uiState.roleName,
+                        onValueChange = viewModel::onRoleNameChanged,
+                        label = "Job role (e.g. SDE Intern)",
+                        enabled = !uiState.isCreating,
+                        isError = uiState.roleName.isNotEmpty() && uiState.roleName.isBlank()
                     )
-                }
-                Text(
-                    text = if (uiState.hasResume) {
-                        "Resume integration is available. The AI will weave your past experience into follow-ups."
-                    } else {
-                        "You don't have a resume uploaded. Add one later to get crossfire questions."
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = SlateGray
-                )
-            }
 
-            SetupCard(
-                title = "Base it on a saved role?",
-                body = "Optionally generate questions against a specific job description."
-            ) {
-                if (uiState.suggestedJobs.isEmpty()) {
-                    Text(
-                        text = "No saved roles available. You can continue with manual text entry above.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = SlateGray
-                    )
-                } else {
-                    JobChoiceRow(
-                        jobs = uiState.suggestedJobs,
-                        selectedJobId = uiState.selectedTargetJobId,
-                        onJobSelected = viewModel::onTargetJobSelected,
-                        onClearSelection = { viewModel.onTargetJobSelected(null) }
-                    )
-                }
-            }
-
-            SetupCard(
-                title = "Lab Conditions",
-                body = "Tune the simulation."
-            ) {
-                ChoiceSection(
-                    title = "Difficulty",
-                    values = DifficultyOptions,
-                    selectedValue = uiState.difficulty,
-                    onSelected = viewModel::onDifficultyChange
-                )
-                ChoiceSection(
-                    title = "Mode",
-                    values = ModeOptions,
-                    selectedValue = uiState.mode,
-                    onSelected = viewModel::onModeChange
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Include resume", style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            text = "Reference your resume in questions.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = SlateGray
-                        )
+                    if (uiState.suggestedJobs.isNotEmpty()) {
+                        Text("Pick from saved jobs", style = MaterialTheme.typography.labelSmall, color = SlateGray)
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(uiState.suggestedJobs) { job ->
+                                val isSelected = uiState.selectedTargetJobId == job.id
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { viewModel.onJobSelected(job) },
+                                    label = { Text(job.title, maxLines = 1) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = InkBlack,
+                                        selectedLabelColor = PureWhite,
+                                        containerColor = PureWhite,
+                                        labelColor = SlateGray
+                                    ),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = FilterChipDefaults.filterChipBorder(
+                                        enabled = true,
+                                        selected = isSelected,
+                                        borderColor = if (isSelected) InkBlack else DividerGray,
+                                        selectedBorderColor = InkBlack
+                                    )
+                                )
+                            }
+                        }
                     }
-                    Switch(
-                        checked = uiState.includeResume,
-                        onCheckedChange = viewModel::onIncludeResumeChange,
-                        enabled = uiState.hasResume,
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = PureWhite,
-                            checkedTrackColor = InkBlack
-                        )
+                }
+
+                HorizontalDivider(color = DividerGray.copy(alpha = 0.5f))
+
+                // Section 2: Lab Parameters (Compact Grid)
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Lab Conditions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Difficulty Picker
+                        Box(modifier = Modifier.weight(1f)) {
+                            ParameterQuickSelector(
+                                label = "Difficulty",
+                                options = DifficultyOptions,
+                                selected = uiState.difficulty,
+                                onSelect = viewModel::onDifficultyChanged
+                            )
+                        }
+                        // Mode Picker
+                        Box(modifier = Modifier.weight(1f)) {
+                            ParameterQuickSelector(
+                                label = "Intensity",
+                                options = ModeOptions,
+                                selected = uiState.mode,
+                                onSelect = viewModel::onModeChanged
+                            )
+                        }
+                    }
+
+                    // Resume Integration Toggle
+                    Surface(
+                        onClick = { if (uiState.hasResume) viewModel.onIncludeResumeChanged(!uiState.includeResume) },
+                        color = if (uiState.includeResume) InkBlack.copy(alpha = 0.05f) else Color.Transparent,
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, if (uiState.includeResume) InkBlack else DividerGray),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                Icons.Rounded.Description,
+                                contentDescription = null,
+                                tint = if (uiState.includeResume) InkBlack else SlateGray
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    "Cross-reference Resume",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (uiState.includeResume) InkBlack else SlateGray
+                                )
+                                Text(
+                                    if (uiState.hasResume) "AI will ask about your specific experience." else "Upload a resume first to enable this.",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = SlateGray
+                                )
+                            }
+                            Switch(
+                                checked = uiState.includeResume,
+                                onCheckedChange = { viewModel.onIncludeResumeChanged(it) },
+                                enabled = uiState.hasResume,
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = PureWhite,
+                                    checkedTrackColor = InkBlack,
+                                    uncheckedThumbColor = SlateGray,
+                                    uncheckedTrackColor = DividerGray
+                                )
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                PillButton(
+                    onClick = viewModel::initializeSimulation,
+                    enabled = uiState.canCreate,
+                    isLoading = uiState.isCreating,
+                    label = "Initialize Simulation"
+                )
+            }
+        }
+
+        // Recent History Section
+        if (uiState.recentSessions.isNotEmpty()) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Rounded.History, null, tint = SlateGray)
+                    Text(
+                        "Recent Simulations",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            PillButton(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = viewModel::createSession,
-                enabled = uiState.canCreate,
-                isLoading = uiState.isCreating,
-                label = "Initialize simulation"
-            )
-
-            if (uiState.recentSessions.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(InternshipUncleTheme.spacing.medium))
-                SectionTitle(
-                    title = "Recent history",
-                    subtitle = "Jump back into past results."
-                )
+                
                 uiState.recentSessions.take(3).forEach { session ->
                     RecentSessionCard(session = session)
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(96.dp))
+        Spacer(modifier = Modifier.height(48.dp))
+    }
+}
+
+@Composable
+private fun ParameterQuickSelector(
+    label: String,
+    options: List<String>,
+    selected: String,
+    onSelect: (String) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = SlateGray, fontWeight = FontWeight.Bold)
+        Surface(
+            color = PureWhite,
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, DividerGray),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(4.dp)) {
+                options.forEach { option ->
+                    val isSelected = selected == option
+                    Surface(
+                        onClick = { onSelect(option) },
+                        color = if (isSelected) InkBlack else Color.Transparent,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = option.replaceFirstChar(Char::uppercase).replace('_', ' '),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSelected) PureWhite else InkBlack
+                        )
+                    }
+                }
+            }
         }
     }
 }

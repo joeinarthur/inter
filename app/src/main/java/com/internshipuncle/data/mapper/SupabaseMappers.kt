@@ -124,6 +124,7 @@ fun ResumeDto.toDomainModel(): ResumeSummary {
     return ResumeSummary(
         id = id,
         fileName = fileName,
+        isParsed = !parsedText.isNullOrBlank(),
         latestScore = latestScore,
         createdAt = createdAt
     )

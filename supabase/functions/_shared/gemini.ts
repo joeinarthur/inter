@@ -34,7 +34,7 @@ export interface GeminiGenerationOptions {
   >;
 }
 
-const DEFAULT_MODEL = "gemini-2.5-flash";
+const DEFAULT_MODEL = "gemini-1.5-flash";
 const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta";
 
 export class GeminiError extends Error {

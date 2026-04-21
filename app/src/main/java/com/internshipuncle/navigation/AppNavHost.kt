@@ -8,13 +8,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.RecordVoiceOver
 import androidx.compose.material.icons.outlined.WorkOutline
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Article
-import androidx.compose.material.icons.outlined.MicNone
 import androidx.compose.material.icons.outlined.BusinessCenter
+import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -51,6 +51,13 @@ import com.internshipuncle.feature_jobs.JobsScreen
 import com.internshipuncle.feature_jobs.JobsViewModel
 import com.internshipuncle.feature_jobs.SavedJobsScreen
 import com.internshipuncle.feature_jobs.SavedJobsViewModel
+import com.internshipuncle.feature_more.CommunityFeedScreen
+import com.internshipuncle.feature_more.MoreScreen
+import com.internshipuncle.feature_more.ProgressScreen
+import com.internshipuncle.feature_more.RealityCheckScreen
+import com.internshipuncle.feature_more.ReferralsScreen
+import com.internshipuncle.feature_profile.ProfileScreen
+import com.internshipuncle.feature_profile.ProfileViewModel
 import com.internshipuncle.feature_resume.ResumeBuilderScreen
 import com.internshipuncle.feature_resume.ResumeBuilderViewModel
 import com.internshipuncle.feature_resume.ResumeRoastScreen
@@ -69,10 +76,10 @@ fun InternshipUncleApp() {
 
     val topLevelDestinations = listOf(
         TopLevelDestination("Home",      AppDestination.Dashboard.route,               Icons.Outlined.Home),
-        TopLevelDestination("Jobs",      AppDestination.Jobs.route,                    Icons.Outlined.BusinessCenter),
+        TopLevelDestination("Internships", AppDestination.Jobs.route,                 Icons.Outlined.BusinessCenter),
         TopLevelDestination("Resume",    AppDestination.ResumeUpload.createRoute(),    Icons.Outlined.Article),
-        TopLevelDestination("Interview", AppDestination.MockInterview.createRoute(),   Icons.Outlined.MicNone),
-        TopLevelDestination("Analyze",   AppDestination.Analyze.route,                 Icons.Outlined.GridView)
+        TopLevelDestination("More",      AppDestination.Analyze.route,                 Icons.Outlined.MoreHoriz),
+        TopLevelDestination("Profile",   AppDestination.Profile.route,                 Icons.Outlined.PersonOutline)
     )
 
     val showBottomBar = currentDestination?.hierarchy?.any { destination ->
@@ -99,6 +106,7 @@ fun InternshipUncleApp() {
 
     AppShell(
         title = currentRoute.toTitle(),
+        showTopBar = shouldShowAppChrome(currentRoute),
         showBottomBar = showBottomBar,
         destinations = topLevelDestinations,
         selectedRoute = topLevelDestinations.firstOrNull { routeMatches(currentRoute, it.route) }?.route
@@ -172,29 +180,66 @@ fun InternshipUncleApp() {
                     onOpenSavedJobs = { navController.navigate(AppDestination.SavedJobs.route) }
                 )
             }
-            composable(AppDestination.Analyze.route) {
-                PlaceholderScreen(
-                    eyebrow = "Analyze",
-                    title = "Pick a role to analyze",
-                    description = "Job analysis is always tied to a target internship. Open the jobs board, choose a role, and jump into the JD reality check from there.",
-                    sections = listOf(
-                        "What you get" to "Plain-English summary, role reality, skill gaps, keywords, and interview topics.",
-                        "Best next move" to "Open a job, then use the analysis CTA from job detail."
-                    ),
-                    actions = {
-                        Button(onClick = {
-                            navController.navigate(AppDestination.Jobs.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }) {
-                            Text("Open jobs")
-                        }
+            composable(
+                route = AppDestination.Analyze.route,
+            ) {
+                MoreScreen(
+                    onOpenResumeMatcher = {
+                        navController.navigate(AppDestination.ResumeMatcher.createRoute())
+                    },
+                    onOpenMockInterview = {
+                        navController.navigate(AppDestination.MockInterview.createRoute())
+                    },
+                    onOpenCommunityFeed = {
+                        navController.navigate(AppDestination.CommunityFeed.route)
+                    },
+                    onOpenJdIntelligence = {
+                        navController.navigate(AppDestination.ResumeMatcher.createRoute(startMode = "paste"))
+                    },
+                    onOpenRealityCheck = {
+                        navController.navigate(AppDestination.RealityCheck.route)
+                    },
+                    onOpenProgress = {
+                        navController.navigate(AppDestination.Progress.route)
+                    },
+                    onOpenReferrals = {
+                        navController.navigate(AppDestination.Referrals.route)
                     }
                 )
+            }
+            composable(
+                route = AppDestination.ResumeMatcher.route,
+                arguments = listOf(
+                    navArgument("targetJobId") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                    navArgument("startMode") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) {
+                val viewModel: AnalysisViewModel = hiltViewModel()
+                AnalysisScreen(viewModel = viewModel)
+            }
+            composable(AppDestination.CommunityFeed.route) {
+                CommunityFeedScreen()
+            }
+            composable(AppDestination.RealityCheck.route) {
+                RealityCheckScreen()
+            }
+            composable(AppDestination.Progress.route) {
+                ProgressScreen()
+            }
+            composable(AppDestination.Referrals.route) {
+                ReferralsScreen()
+            }
+            composable(AppDestination.Profile.route) {
+                val viewModel: ProfileViewModel = hiltViewModel()
+                ProfileScreen(viewModel = viewModel)
             }
             composable(AppDestination.SavedJobs.route) {
                 val viewModel: SavedJobsViewModel = hiltViewModel()
@@ -211,18 +256,12 @@ fun InternshipUncleApp() {
                 val viewModel: JobDetailViewModel = hiltViewModel()
                 JobDetailScreen(
                     viewModel = viewModel,
-                    onOpenAnalysis = { jobId -> navController.navigate(AppDestination.Analysis.createRoute(jobId)) },
+                    onOpenAnalysis = { jobId -> navController.navigate(AppDestination.ResumeMatcher.createRoute(jobId)) },
                     onOpenResume = { jobId -> navController.navigate(AppDestination.ResumeUpload.createRoute(jobId)) },
                     onOpenInterview = { jobId -> navController.navigate(AppDestination.MockInterview.createRoute(jobId)) }
                 )
             }
-            composable(
-                route = AppDestination.Analysis.route,
-                arguments = listOf(navArgument("jobId") { type = NavType.StringType })
-            ) {
-                val viewModel: AnalysisViewModel = hiltViewModel()
-                AnalysisScreen(viewModel = viewModel)
-            }
+
             composable(
                 route = AppDestination.ResumeRoast.route,
                 arguments = listOf(
@@ -376,6 +415,18 @@ private fun resolveAuthRoute(
     }
 }
 
+private fun shouldShowAppChrome(currentRoute: String?): Boolean {
+    return when (currentRoute) {
+        null,
+        AppDestination.Splash.route,
+        AppDestination.Login.route,
+        AppDestination.Signup.route,
+        AppDestination.Onboarding.route -> false
+
+        else -> true
+    }
+}
+
 private fun String?.toTitle(): String {
     return when (this) {
         AppDestination.Splash.route -> "Getting the workflow ready"
@@ -383,11 +434,12 @@ private fun String?.toTitle(): String {
         AppDestination.Signup.route -> "Create your account"
         AppDestination.Onboarding.route -> "Pick your target roles"
         AppDestination.Jobs.route -> "Discover curated internships"
-        AppDestination.Analyze.route -> "Analyze a target role"
+        AppDestination.Analyze.route -> "More"
         AppDestination.SavedJobs.route -> "Saved internships"
         AppDestination.ResumeUpload.route -> "Resume Lab"
         AppDestination.ResumeBuilder.route -> "Resume Builder"
         AppDestination.MockInterview.route -> "Interview Prep"
+        AppDestination.Profile.route -> "Settings"
         AppDestination.Dashboard.route -> "Readiness dashboard"
         AppDestination.MockInterviewSession.route -> "Mock interview session"
         AppDestination.MockInterviewSummary.route -> "Interview summary"
@@ -395,8 +447,14 @@ private fun String?.toTitle(): String {
             this?.startsWith("resume/upload") == true -> "Resume Lab"
             this?.startsWith("resume/builder") == true -> "Resume Builder"
             this?.startsWith("resume/roast/") == true -> "Resume roast"
+            this?.startsWith("resume-matcher") == true -> "Resume Matcher"
             this?.startsWith("job/") == true -> "Target role overview"
             this?.startsWith("analysis/") == true -> "JD reality check"
+            this?.startsWith("more/community") == true -> "Community feed"
+            this?.startsWith("more/reality") == true -> "Reality check"
+            this?.startsWith("more/progress") == true -> "Progress"
+            this?.startsWith("more/referrals") == true -> "Referrals"
+            this?.startsWith("profile") == true -> "Settings"
             this?.startsWith("interview/mock/session/") == true -> "Mock interview session"
             this?.startsWith("interview/mock/summary/") == true -> "Interview summary"
             else -> "Internship prep"

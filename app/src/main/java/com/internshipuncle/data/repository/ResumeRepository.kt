@@ -177,6 +177,7 @@ class SupabaseResumeRepository @Inject constructor(
             val summary = ResumeSummary(
                 id = parseResult.resumeId,
                 fileName = fileName,
+                isParsed = true,
                 latestScore = null,
                 createdAt = null
             )

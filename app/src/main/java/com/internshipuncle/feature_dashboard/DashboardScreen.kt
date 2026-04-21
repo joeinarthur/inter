@@ -3,6 +3,7 @@ package com.internshipuncle.feature_dashboard
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -39,7 +40,10 @@ import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.WorkOutline
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -71,6 +75,7 @@ import com.internshipuncle.core.design.GreenPositive
 import com.internshipuncle.core.design.InkBlack
 import com.internshipuncle.core.design.InternshipUncleTheme
 import com.internshipuncle.core.design.PureWhite
+import com.internshipuncle.core.design.RedNegative
 import com.internshipuncle.core.design.RedNegative
 import com.internshipuncle.core.design.SilverMist
 import com.internshipuncle.core.design.SlateGray
@@ -113,7 +118,9 @@ data class DashboardUiState(
     val isConfigured: Boolean = true,
     val isSigningOut: Boolean = false,
     val signOutError: String? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val userName: String = "Internship Uncle",
+    val userInitials: String = "IU"
 ) {
     val hasContent: Boolean
         get() = (readinessScore ?: 0) > 0 ||
@@ -141,11 +148,15 @@ class DashboardViewModel @Inject constructor(
 
     val uiState: StateFlow<DashboardUiState> = combine(
         dashboardRepository.snapshot(),
+        authRepository.session(),
         signOutState
-    ) { snapshotResult, signOutUiState ->
+    ) { snapshotResult, session, signOutUiState ->
+        val profile = session.profile
         snapshotResult.toDashboardUiState().copy(
             isSigningOut = signOutUiState.isSigningOut,
-            signOutError = signOutUiState.signOutError
+            signOutError = signOutUiState.signOutError,
+            userName = profile?.name ?: "Internship Uncle",
+            userInitials = profile?.name?.toInitials() ?: "IU"
         )
     }.stateIn(
         scope = viewModelScope,
@@ -183,7 +194,7 @@ fun DashboardScreen(
     when {
         uiState.isLoading -> PlaceholderScreen(
             eyebrow     = "Dashboard",
-            title       = "Loading your readiness",
+            title       = "Refining your workstation",
             description = "Pulling scores, deadlines and activity from Supabase.",
             actions     = {
                 CircularProgressIndicator(
@@ -196,7 +207,7 @@ fun DashboardScreen(
 
         uiState.errorMessage != null -> PlaceholderScreen(
             eyebrow     = "Dashboard",
-            title       = "Dashboard unavailable",
+            title       = "System pause",
             description = uiState.errorMessage ?: "The dashboard could not be loaded.",
             sections    = listOf(
                 "Status" to if (uiState.isConfigured) "Configured but unavailable." else "Supabase config is missing."
@@ -221,7 +232,7 @@ fun DashboardScreen(
     }
 }
 
-// ── Main Dashboard Content — fintech layout ────────────────────────────
+// ── Main Dashboard Content ────────────────────────────────────────────
 
 @Composable
 private fun DashboardContent(
@@ -241,49 +252,38 @@ private fun DashboardContent(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
-        // ── 1. Welcome header (avatar + name + icons)
-        WelcomeHeader(onRefresh = onRefresh, onSignOut = onSignOut)
+        // ── 1. Compact Header
+        WelcomeHeader(
+            userName = uiState.userName,
+            userInitials = uiState.userInitials,
+            onSignOut = onSignOut
+        )
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(20.dp))
 
-        // ── 2. Hero readiness score (fintech balance style)
-        ReadinessHeroSection(uiState = uiState)
+        // ── 2. Momentum Hub (Hero Card)
+        MomentumHub(uiState = uiState, onOpenInterview = onOpenInterview)
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(32.dp))
 
-        // ── 3. Primary action buttons (circular icons row — like Top-up/Send)
-        PrimaryActionRow(
-            onOpenJobs      = onOpenJobs,
-            onOpenResumeLab = onOpenResumeLab,
+        // ── 3. Simulation Toolbox (Gallery Cards)
+        ToolboxGallery(
             onOpenInterview = onOpenInterview,
-            onSignOut       = onSignOut,
-            isSigningOut    = uiState.isSigningOut
+            onOpenResumeLab = onOpenResumeLab,
+            onOpenJobs = onOpenJobs
         )
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(32.dp))
 
-        // ── 4. Shortcuts row (smaller circular icons — like Transport/Internet)
-        ShortcutsSection(
-            savedJobsCount       = uiState.savedJobsCount,
-            onOpenSavedJobs      = onOpenSavedJobs,
-            onOpenResumeLab      = onOpenResumeLab,
-            onOpenInterview      = onOpenInterview,
-            onOpenJobs           = onOpenJobs
+        // ── 4. Quick Stats & Shortcuts
+        QuickInsightsRow(
+            savedJobsCount = uiState.savedJobsCount,
+            onOpenSavedJobs = onOpenSavedJobs
         )
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(32.dp))
 
-        // ── 5. Metrics strip (2-column inline tiles)
-        MetricsStrip(
-            resumeScore     = uiState.latestResumeScore,
-            mockScore       = uiState.latestMockScore,
-            savedJobsCount  = uiState.savedJobsCount,
-            deadlinesCount  = uiState.upcomingDeadlines.size
-        )
-
-        Spacer(Modifier.height(28.dp))
-
-        // ── 6. Recent activity (transaction-list style)
+        // ── 5. Activity Timeline
         RecentActivitySection(
             activities      = uiState.recentActivity,
             onOpenJob       = onOpenJob,
@@ -291,24 +291,18 @@ private fun DashboardContent(
             onOpenInterview = onOpenInterview
         )
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(32.dp))
 
-        // ── 7. Upcoming deadlines
+        // ── 6. Deadlines
         if (uiState.upcomingDeadlines.isNotEmpty()) {
             DeadlinesSection(
                 deadlines  = uiState.upcomingDeadlines,
                 onOpenJob  = onOpenJob
             )
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(32.dp))
         }
 
-        // ── 8. Next steps (if suggestions exist)
-        if (uiState.nextStepSuggestions.isNotEmpty()) {
-            NextStepsSection(suggestions = uiState.nextStepSuggestions)
-            Spacer(Modifier.height(28.dp))
-        }
-
-        // ── Sign-out error notice
+        // Sign-out error notice
         uiState.signOutError?.let { error ->
             Box(modifier = Modifier.padding(horizontal = 20.dp)) {
                 ErrorNotice(message = error)
@@ -316,7 +310,6 @@ private fun DashboardContent(
             Spacer(Modifier.height(16.dp))
         }
 
-        // Bottom padding for nav bar
         Spacer(Modifier.height(96.dp))
     }
 }
@@ -326,7 +319,13 @@ private fun DashboardContent(
 // Right: notification bell + settings gear (outlined circles)
 
 @Composable
-private fun WelcomeHeader(onRefresh: () -> Unit, onSignOut: () -> Unit) {
+private fun WelcomeHeader(
+    userName: String,
+    userInitials: String,
+    onSignOut: () -> Unit
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -335,8 +334,13 @@ private fun WelcomeHeader(onRefresh: () -> Unit, onSignOut: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment     = Alignment.CenterVertically
     ) {
-        // Avatar + greeting
+        // Avatar + greeting (clickable for dropdown)
         Row(
+            modifier = Modifier.clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() },
+                onClick = { isExpanded = true }
+            ),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment     = Alignment.CenterVertically
         ) {
@@ -349,7 +353,7 @@ private fun WelcomeHeader(onRefresh: () -> Unit, onSignOut: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text       = "IU",           // Internship Uncle initials
+                    text       = userInitials,
                     color      = PureWhite,
                     fontSize   = 16.sp,
                     fontWeight = FontWeight.Bold,
@@ -364,18 +368,33 @@ private fun WelcomeHeader(onRefresh: () -> Unit, onSignOut: () -> Unit) {
                     color = SlateGray
                 )
                 Text(
-                    text       = "Internship Uncle",
+                    text       = userName,
                     style      = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color      = InkBlack
                 )
             }
-        }
 
-        // Right action icons
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            HeaderIconButton(icon = Icons.Outlined.Star, onClick = onSignOut)
-            HeaderIconButton(icon = Icons.Outlined.Notifications, onClick = onRefresh)
+            // Dropdown Menu Pop-out
+            DropdownMenu(
+                expanded = isExpanded,
+                onDismissRequest = { isExpanded = false },
+                modifier = Modifier.background(PureWhite, RoundedCornerShape(12.dp))
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Settings", style = MaterialTheme.typography.bodyMedium) },
+                    onClick = { isExpanded = false },
+                    leadingIcon = { Icon(Icons.Outlined.Settings, null, Modifier.size(18.dp)) }
+                )
+                DropdownMenuItem(
+                    text = { Text("Log Out", color = RedNegative, style = MaterialTheme.typography.bodyMedium) },
+                    onClick = {
+                        isExpanded = false
+                        onSignOut()
+                    },
+                    leadingIcon = { Icon(Icons.Outlined.Refresh, null, Modifier.size(18.dp), tint = RedNegative) }
+                )
+            }
         }
     }
 }
@@ -403,333 +422,200 @@ private fun HeaderIconButton(icon: ImageVector, onClick: () -> Unit) {
     }
 }
 
-// ── 2. Readiness Hero Section ─────────────────────────────────────────
-// Like the large balance number in fintech apps
+// ── 2. Momentum Hub ───────────────────────────────────────────────────
 
 @Composable
-private fun ReadinessHeroSection(uiState: DashboardUiState) {
-    Column(
-        modifier            = Modifier
+private fun MomentumHub(uiState: DashboardUiState, onOpenInterview: () -> Unit) {
+    Surface(
+        modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp),
-        horizontalAlignment = Alignment.Start
+        shape = RoundedCornerShape(24.dp),
+        color = InkBlack,
+        shadowElevation = 4.dp
     ) {
-        Text(
-            text  = "Current readiness",
-            style = MaterialTheme.typography.bodySmall,
-            color = SlateGray
-        )
-
-        Spacer(Modifier.height(6.dp))
-
-        // Large score number — like ₦674,981.65 in screenshot
-        val scoreInt     = uiState.readinessScore ?: 0
-        val scoreFraction = scoreInt % 10
-
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                text       = "$scoreInt",
-                style      = MaterialTheme.typography.displayLarge.copy(fontSize = 52.sp),
-                color      = InkBlack,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text       = ".$scoreFraction",
-                style      = MaterialTheme.typography.displayLarge.copy(fontSize = 30.sp),
-                color      = SlateGray,
-                modifier   = Modifier.padding(bottom = 6.dp)
-            )
-            Text(
-                text     = " / 100",
-                style    = MaterialTheme.typography.bodyMedium,
-                color    = SilverMist,
-                modifier = Modifier.padding(bottom = 10.dp, start = 4.dp)
-            )
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        // Progress bar (thin)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(4.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(SurfaceGray)
+        Column(
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            val progress = (scoreInt.coerceIn(0, 100) / 100f)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(progress)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(InkBlack)
-            )
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        Text(
-            text  = uiState.readinessSummary.take(80),
-            style = MaterialTheme.typography.bodySmall,
-            color = SlateGray,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-// ── 3. Primary Action Row ─────────────────────────────────────────────
-// Matches screenshot: "Top-up" (filled dark circle) + 3 outlined circles
-// First button is filled black (primary CTA), rest are outlined
-
-@Composable
-private fun PrimaryActionRow(
-    onOpenJobs: () -> Unit,
-    onOpenResumeLab: () -> Unit,
-    onOpenInterview: () -> Unit,
-    onSignOut: () -> Unit,
-    isSigningOut: Boolean
-) {
-    Row(
-        modifier              = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        // Primary action — filled dark circle (like "Top-up" in screenshot)
-        PrimaryCircleAction(
-            icon    = Icons.Outlined.Add,
-            label   = "Find Jobs",
-            filled  = true,
-            onClick = onOpenJobs
-        )
-        PrimaryCircleAction(
-            icon    = Icons.Outlined.Send,
-            label   = "Resume",
-            filled  = false,
-            onClick = onOpenResumeLab
-        )
-        PrimaryCircleAction(
-            icon    = Icons.Outlined.MicNone,
-            label   = "Interview",
-            filled  = false,
-            onClick = onOpenInterview
-        )
-        PrimaryCircleAction(
-            icon    = Icons.Outlined.MoreHoriz,
-            label   = if (isSigningOut) "..." else "More",
-            filled  = false,
-            onClick = onSignOut
-        )
-    }
-}
-
-@Composable
-private fun PrimaryCircleAction(
-    icon: ImageVector,
-    label: String,
-    filled: Boolean,
-    onClick: () -> Unit
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(60.dp)
-                .clip(CircleShape)
-                .background(if (filled) InkBlack else CanvasWhite)
-                .then(
-                    if (!filled) Modifier.then(
-                        Modifier.background(SurfaceGray, CircleShape)
-                    ) else Modifier
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Text(
+                        "Good to see you, \nUncle.",
+                        style = MaterialTheme.typography.displaySmall.copy(fontSize = 28.sp),
+                        color = PureWhite,
+                        fontWeight = FontWeight.ExtraBold,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Uncle has been waiting.\nLet's see what you've been\nworking on.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = PureWhite.copy(alpha = 0.8f)
+                    )
+                }
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(id = com.internshipuncle.R.drawable.favicon_removebg_preview),
+                    contentDescription = "Uncle Logo",
+                    modifier = Modifier.size(80.dp).clip(CircleShape).background(Color.White)
                 )
-                .clickable(
-                    indication        = null,
-                    interactionSource = remember { MutableInteractionSource() },
-                    onClick           = onClick
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector        = icon,
-                contentDescription = label,
-                tint               = if (filled) PureWhite else InkBlack,
-                modifier           = Modifier.size(24.dp)
-            )
+            }
+            
+            Button(
+                onClick = onOpenInterview,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = RedNegative,
+                    contentColor = PureWhite
+                )
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Outlined.MicNone, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Text("UNCLE WILL GRILL YOU NOW", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                }
+            }
         }
+    }
+}
 
+@Composable
+private fun ScoreIndicator(label: String, score: Int?) {
+    Column {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = SlateGray)
         Text(
-            text      = label,
-            style     = MaterialTheme.typography.labelSmall,
-            color     = InkBlack,
-            fontWeight = FontWeight.Medium
+            text = score?.let { "$it%" } ?: "Pending",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = if (score != null) InkBlack else SilverMist
         )
     }
 }
 
-// ── 4. Shortcuts Section ──────────────────────────────────────────────
-// Matches screenshot: "Shortcuts" label + row of smaller outlined icons
+// ── 3. Toolbox Gallery ────────────────────────────────────────────────
 
 @Composable
-private fun ShortcutsSection(
-    savedJobsCount: Int,
-    onOpenSavedJobs: () -> Unit,
-    onOpenResumeLab: () -> Unit,
+private fun ToolboxGallery(
     onOpenInterview: () -> Unit,
+    onOpenResumeLab: () -> Unit,
     onOpenJobs: () -> Unit
 ) {
     Column(
-        modifier            = Modifier
-            .fillMaxWidth()
-            .background(SurfaceGray)
-            .padding(vertical = 20.dp),
+        modifier = Modifier.padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Row(
-            modifier              = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment     = Alignment.CenterVertically
-        ) {
-            Text(
-                text       = "Shortcuts",
-                style      = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color      = InkBlack
-            )
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            ShortcutItem(
-                icon    = Icons.Outlined.BusinessCenter,
-                label   = "Browse",
-                onClick = onOpenJobs
-            )
-            ShortcutItem(
-                icon    = Icons.Outlined.BookmarkBorder,
-                label   = "Saved (${savedJobsCount})",
-                onClick = onOpenSavedJobs
-            )
-            ShortcutItem(
-                icon    = Icons.Outlined.Description,
-                label   = "Resume",
-                onClick = onOpenResumeLab
-            )
-            ShortcutItem(
-                icon    = Icons.Outlined.RecordVoiceOver,
-                label   = "Interview",
-                onClick = onOpenInterview
-            )
-            ShortcutItem(
-                icon    = Icons.Outlined.Analytics,
-                label   = "Analyze",
-                onClick = onOpenJobs
-            )
-        }
-    }
-}
-
-@Composable
-private fun ShortcutItem(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(52.dp)
-                .clip(CircleShape)
-                .background(PureWhite)
-                .clickable(
-                    indication        = null,
-                    interactionSource = remember { MutableInteractionSource() },
-                    onClick           = onClick
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector        = icon,
-                contentDescription = label,
-                tint               = InkBlack,
-                modifier           = Modifier.size(22.dp)
-            )
-        }
-
         Text(
-            text  = label.take(10),
+            "SIMULATION WORKSTATION",
             style = MaterialTheme.typography.labelSmall,
             color = SlateGray,
-            maxLines = 1
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.5.sp
         )
+
+        Row(
+            modifier = Modifier.fillMaxWidth().height(180.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            ToolCard(
+                modifier = Modifier.weight(1f),
+                title = "Interview\nLab",
+                description = "Custom behavioral & technical mocks.",
+                icon = Icons.Outlined.MicNone,
+                onClick = onOpenInterview
+            )
+            ToolCard(
+                modifier = Modifier.weight(1f),
+                title = "Resume\nRoast",
+                description = "JD-specific score & experience audit.",
+                icon = Icons.Outlined.Description,
+                onClick = onOpenResumeLab
+            )
+        }
     }
 }
 
-// ── 5. Metrics Strip ──────────────────────────────────────────────────
-// 2x2 grid of compact metric tiles (monochrome)
+@Composable
+private fun ToolCard(
+    modifier: Modifier = Modifier,
+    title: String,
+    description: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        shape = RoundedCornerShape(24.dp),
+        color = InkBlack,
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(PureWhite.copy(alpha = 0.1f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, tint = PureWhite, modifier = Modifier.size(20.dp))
+            }
+            
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(title, color = PureWhite, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(description, color = PureWhite.copy(alpha = 0.6f), style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
+}
+
+// ── 4. Quick Insights Row ─────────────────────────────────────────────
 
 @Composable
-private fun MetricsStrip(
-    resumeScore: Int?,
-    mockScore: Int?,
+private fun QuickInsightsRow(
     savedJobsCount: Int,
-    deadlinesCount: Int
+    onOpenSavedJobs: () -> Unit
 ) {
-    Column(
-        modifier            = Modifier.padding(horizontal = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            text       = "Your metrics",
-            style      = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color      = InkBlack
-        )
-
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            MetricTile(
-                modifier = Modifier.weight(1f),
-                label    = "Resume",
-                value    = resumeScore?.toString() ?: "--",
-                detail   = if (resumeScore == null) "No roast yet" else "Latest score",
-                positive = resumeScore?.let { it >= 70 }
-            )
-            MetricTile(
-                modifier = Modifier.weight(1f),
-                label    = "Interview",
-                value    = mockScore?.toString() ?: "--",
-                detail   = if (mockScore == null) "No session yet" else "Latest score",
-                positive = mockScore?.let { it >= 70 }
-            )
+        Surface(
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(24.dp),
+            color = SurfaceGray,
+            onClick = onOpenSavedJobs
+        ) {
+            Row(
+                modifier = Modifier.padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Icon(Icons.Outlined.BookmarkBorder, null, tint = InkBlack)
+                Column {
+                    Text("$savedJobsCount Saved", fontWeight = FontWeight.Bold, color = InkBlack)
+                    Text("Targeting roles", style = MaterialTheme.typography.labelSmall, color = SlateGray)
+                }
+            }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            MetricTile(
-                modifier = Modifier.weight(1f),
-                label    = "Saved Jobs",
-                value    = savedJobsCount.toString(),
-                detail   = if (savedJobsCount == 0) "Empty shortlist" else "Roles tracked",
-                positive = savedJobsCount > 0
-            )
-            MetricTile(
-                modifier = Modifier.weight(1f),
-                label    = "Deadlines",
-                value    = deadlinesCount.toString(),
-                detail   = if (deadlinesCount == 0) "None watching" else "Upcoming",
-                positive = null
-            )
+        
+        Surface(
+            modifier = Modifier.size(64.dp),
+            shape = RoundedCornerShape(24.dp),
+            color = SurfaceGray,
+            onClick = { /* Could be Settings or Stats */ }
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(Icons.Outlined.GridView, null, tint = InkBlack)
+            }
         }
     }
 }
@@ -1149,7 +1035,7 @@ private fun FintechPillButton(
         modifier = modifier
             .height(50.dp)
             .clip(RoundedCornerShape(25.dp))
-            .background(InkBlack)
+            .background(RedNegative)
             .clickable(
                 indication        = null,
                 interactionSource = remember { MutableInteractionSource() },
@@ -1261,4 +1147,14 @@ private fun RepositoryStatus.toSignOutMessage(): String? {
         RepositoryStatus.BackendNotReady  -> "The auth backend is not fully ready yet."
         is RepositoryStatus.Failure       -> message
     }
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────
+
+private fun String.toInitials(): String {
+    return this.split(" ")
+        .filter { it.isNotBlank() }
+        .take(2)
+        .mapNotNull { it.firstOrNull()?.uppercase() }
+        .joinToString("")
 }

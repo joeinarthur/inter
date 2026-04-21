@@ -3,6 +3,7 @@ package com.internshipuncle.domain.model
 data class ResumeSummary(
     val id: String,
     val fileName: String?,
+    val isParsed: Boolean,
     val latestScore: Int?,
     val createdAt: String?
 )

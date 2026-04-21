@@ -261,8 +261,10 @@ function buildParsePrompt(input: {
   size: number;
 }): string {
   return [
-    "You are Internship Uncle. Extract the exact text and structured sections from the attached resume.",
-    "Do not invent information. If a field is missing, leave it null or omit it from arrays.",
+    "You are an expert resume parser for Internship Uncle. Please read the attached resume document (PDF or image).",
+    "Extract all the actual text from the document exactly as it appears into the `parsed_text` field. Do not summarize this field; preserve all the raw content.",
+    "Then, extract structured details into the `parsed_sections` object.",
+    "Do not invent or hallucinate information. If a field is missing, leave it null or omit it from arrays.",
     "Return only JSON that matches the schema.",
     "",
     `Resume ID: ${input.resumeId}`,
@@ -270,8 +272,7 @@ function buildParsePrompt(input: {
     `MIME type: ${input.mimeType}`,
     `File size bytes: ${input.size}`,
     "",
-    "The parsed_text field should capture the resume content in clean plain text form.",
-    "The parsed_sections field should organize the extracted content into basics, education, skills, projects, and experience.",
+    "Make sure `parsed_text` is extremely thorough, as downstream features rely on it for evaluating the resume.",
   ].join("\n");
 }
 
